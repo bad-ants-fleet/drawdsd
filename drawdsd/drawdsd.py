@@ -1,10 +1,9 @@
 
-import dsdobjects
-from dsdobjects import DomainS
 from dsdobjects.objectio import set_io_objects, clear_io_objects, read_pil, read_pil_line
 from itertools import combinations
+from colorsys import hls_to_rgb
 
-import rendering
+import rendering 
 import drawmodules as dms
 
 def agl(a):
@@ -192,7 +191,8 @@ def get_final_modules(cplx, pair_angles, loop_lengths, origin = (0, 0), scale = 
         m.infer_points()
     return modules
 
-def draw_complex(cplx, pair_angles = None, loop_lengths = None):
+def draw_complex(cplx, pair_angles = None, loop_lengths = None, 
+                 origin = (0, 0), scale = 10):
     """Returns the SVG image of a complex.
 
     The colors of domains have to be specified as property of the Domain
@@ -221,35 +221,22 @@ def draw_complex(cplx, pair_angles = None, loop_lengths = None):
     if loop_lengths is None:
         loop_lengths = ll
 
-    modules = get_final_modules(cplx, pair_angles, loop_lengths, origin = (0, 0), scale = 10)
-
-    svg = rendering.get_canvas()
+    modules = get_final_modules(cplx, pair_angles, loop_lengths, 
+                                origin = origin, scale = scale)
+    objects = []
     for m in modules:
-        svg.extend(rendering.draw_stem(*m.stem_data()))
-        [svg.extend(x) for x in rendering.draw_tentacles(*m.tentacle_data())]
+        objects.extend(rendering.draw_stem(*m.stem_data()))
+        [objects.extend(x) for x in rendering.draw_tentacles(*m.tentacle_data())]
 
-    return svg, pair_angles, loop_lengths
+    return objects, pair_angles, loop_lengths
+
+def get_rgb_palette(num):
+    num = int(360/(num+1))
+    palette = [hls_to_rgb(angle/360, .6, .8) for angle in range(0, 360, num)]
+    return [(int(r*255), int(g*255), int(b*255)) for (r,g,b) in palette]
 
 def main():
-    dcolors = {'r': 'red',
-           'r*': 'red',
-           'a': 'blue',
-           'a*': 'blue',
-           'b': 'blue',
-           'b*': 'blue',
-           'c': 'blue',
-           'c*': 'blue',
-           'g': 'green',
-           'g*': 'green',
-           'x': 'green',
-           'x*': 'green',
-           'k': 'green',
-           'k*': 'green',
-           'l': 'black',
-           'l*': 'black',
-           'y': 'yellow',
-           'y*': 'yellow'}
-
+    import drawSvg as draw
     domains = '''
     length a = 7
     length b = 5
@@ -269,13 +256,14 @@ def main():
     mycplx = read_pil_line('A = r b( g r b( l ) y r b( g + l ) y r b( g + l ) y l ) y')
     #mycplx = read_pil_line('A = r b( b( l ) b( g + l ) l ) y')
 
+    palette = get_rgb_palette(len(mycplx.domains))
     for dom in mycplx.domains:
-        dom.color = dcolors[dom.name]
-
-    # provide module angles in order
-    #'A = x <@0> a( <|2|> b y y <@0> c( y + ) ) k'
-    # change default tentacle lengths
-
+        if hasattr(dom, 'color'):
+            continue
+        col = palette.pop(0)
+        dom.color = f'rgb{col}'
+        (~dom).color = f'rgb{col}'
+        
     # This assumes you provide a complex e.g. from dsdobjects, and also have
     # colors assigned to domains.
     pa, ll = get_default_plot_params(mycplx)
@@ -285,10 +273,13 @@ def main():
     ll[0][1] = 20
     ll[1][1] = 20
 
-    svg, pa, ll = draw_complex(mycplx, pair_angles = pa, loop_lengths = ll)
-
+    svgC, pa, ll = draw_complex(mycplx, pair_angles = pa, loop_lengths = ll,
+                                origin = (0, 0), scale = 10)
+    svg = rendering.get_drawing(svgC)
+    svg.append(draw.Text(f'{mycplx.name}:', 14, x = -25, y = 0, 
+                         font_weight = 'bold', text_anchor='middle', valign='center'))
     svg.savePng('example.png')
-    #print(d.asSvg())
+    #print(svg.asSvg())
 
 if __name__ == '__main__':
     main()

@@ -8,7 +8,7 @@ with open("README.md", "r") as fh:
 setup(
     name = 'drawdsd',
     version = '0.1',
-    description = 'Draw DSD complexes',
+    description = 'SVG images of domain-level complexes',
     long_description = LONG_DESCRIPTION,
     long_description_content_type = "text/markdown",
     author = 'Stefan Badelt',
@@ -23,7 +23,8 @@ setup(
         'Intended Audience :: Science/Research',
         ],
     python_requires = '>=3.9',
-    install_requires = ['dsdobjects'],
+    install_requires = ['drawSvg',
+                        'dsdobjects'],
     packages = find_packages(),
     test_suite = 'tests',
 )
