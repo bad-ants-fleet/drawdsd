@@ -6,6 +6,7 @@ log = logging.getLogger(__name__)
 
 import numpy as np
 import drawSvg as draw
+from colorsys import hls_to_rgb
 
 dfont = 'bold' # TODO: need some interfacd for plotting parameters.
 
@@ -46,6 +47,10 @@ def estimate_dimensions(svgC):
     dimy = maxy - miny
     return dimx, dimy, minx, miny
 
+def get_rgb_palette(num):
+    num = int(360/(num+1))
+    palette = [hls_to_rgb(angle/360, .6, .8) for angle in range(0, 360, num)]
+    return [(int(r*255), int(g*255), int(b*255)) for (r,g,b) in palette]
 
 def draw_stem(i1, i2, i3, i4, color, angle, length, nameT, nameB):
     bground = draw.Path(stroke_width=0, fill='black', fill_opacity=.3)

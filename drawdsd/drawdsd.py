@@ -1,10 +1,9 @@
 
 from dsdobjects.objectio import set_io_objects, clear_io_objects, read_pil, read_pil_line
 from itertools import combinations
-from colorsys import hls_to_rgb
 
-import rendering 
-import drawmodules as dms
+from drawdsd.rendering import get_drawing, get_rgb_palette, draw_stem, draw_tentacles
+from drawdsd.drawmodules import dsd_module, dsd_hairpin_module
 
 def agl(a):
     return a % 360
@@ -82,7 +81,7 @@ def get_raw_modules(ptable, stable, segments, pair_angles, scale):
             # Check if it is a hairpin!
             if sg1[1] and sg2[0] == [] and sg1[1][-1] == [sj, dj-1]:
                 th = [stable[i][j] for (i, j) in sg1[1]]
-                m = dms.dsd_hairpin_module(stem, t1, t4, th, scale = scale)
+                m = dsd_hairpin_module(stem, t1, t4, th, scale = scale)
                 # Provide the loop_length data
                 if k1: m.k1 = scale * k1
                 if k4: m.k4 = scale * k4
@@ -92,7 +91,7 @@ def get_raw_modules(ptable, stable, segments, pair_angles, scale):
             else:
                 t2 = [stable[i][j] for (i, j) in sg1[1]]
                 t3 = [stable[i][j] for (i, j) in sg2[0]]
-                m = dms.dsd_module(stem, t1, t2, t3, t4, scale = scale)
+                m = dsd_module(stem, t1, t2, t3, t4, scale = scale)
                 # Provide the loop_length data
                 if k1: m.k1 = scale * k1
                 if k2: m.k2 = scale * k2
@@ -225,15 +224,10 @@ def draw_complex(cplx, pair_angles = None, loop_lengths = None,
                                 origin = origin, scale = scale)
     objects = []
     for m in modules:
-        objects.extend(rendering.draw_stem(*m.stem_data()))
-        [objects.extend(x) for x in rendering.draw_tentacles(*m.tentacle_data())]
+        objects.extend(draw_stem(*m.stem_data()))
+        [objects.extend(x) for x in draw_tentacles(*m.tentacle_data())]
 
     return objects, pair_angles, loop_lengths
-
-def get_rgb_palette(num):
-    num = int(360/(num+1))
-    palette = [hls_to_rgb(angle/360, .6, .8) for angle in range(0, 360, num)]
-    return [(int(r*255), int(g*255), int(b*255)) for (r,g,b) in palette]
 
 def main():
     import drawSvg as draw
@@ -275,7 +269,7 @@ def main():
 
     svgC, pa, ll = draw_complex(mycplx, pair_angles = pa, loop_lengths = ll,
                                 origin = (0, 0), scale = 10)
-    svg = rendering.get_drawing(svgC)
+    svg = get_drawing(svgC)
     svg.append(draw.Text(f'{mycplx.name}:', 14, x = -25, y = 0, 
                          font_weight = 'bold', text_anchor='middle', valign='center'))
     svg.savePng('example.png')
