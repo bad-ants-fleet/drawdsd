@@ -13,11 +13,6 @@ generated images that are *almost* exactly like you want them? Then try this.
 
 ### 1. Using jupyter notebooks:
 **This interface is in prepration, it does not work yet!** 
-Instead, call the preliminary main function from the command line ...
-```
-    python drawdsd/drawdsd.py
-```
-... and then look at the file *example.png*.
 
 ### 2. Customizing the SVG output:
 This example assumes you are somewhat comfortable working with the [dsdobjects]
@@ -80,7 +75,7 @@ svgC, pa, ll = draw_complex(mycplx, pair_angles = pa, loop_lengths = ll)
 svg = get_drawing(svgC)
 svg.savePng(f'drawing_complex_{mycplx.name}.png')
 ```
-You can find this script in the [examples] folder: [customize.py].
+You can find a modified version of this script in the [examples] folder: [customize.py].
 
 ## Version
  - v0.1

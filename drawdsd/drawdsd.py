@@ -1,9 +1,10 @@
+#!/usr/bin/env python
 
 from dsdobjects.objectio import set_io_objects, clear_io_objects, read_pil, read_pil_line
 from itertools import combinations
 
-from drawdsd.rendering import get_drawing, get_rgb_palette, draw_stem, draw_tentacles
-from drawdsd.drawmodules import dsd_module, dsd_hairpin_module
+from .rendering import get_drawing, get_rgb_palette, draw_stem, draw_tentacles
+from .drawmodules import dsd_module, dsd_hairpin_module
 
 def agl(a):
     return a % 360
@@ -228,53 +229,4 @@ def draw_complex(cplx, pair_angles = None, loop_lengths = None,
         [objects.extend(x) for x in draw_tentacles(*m.tentacle_data())]
 
     return objects, pair_angles, loop_lengths
-
-def main():
-    import drawSvg as draw
-    domains = '''
-    length a = 7
-    length b = 5
-    length c = 15
-    length x = 5
-    length y = 15
-    length k = 5
-    length r = 5
-    length g = 5
-    length l = 5
-    '''
-    set_io_objects()
-    _ = read_pil(domains)
-
-    # Test some examples 
-    #mycplx = read_pil_line('A = k a( b y y c( y + ) ) k')
-    mycplx = read_pil_line('A = r b( g r b( l ) y r b( g + l ) y r b( g + l ) y l ) y')
-    #mycplx = read_pil_line('A = r b( b( l ) b( g + l ) l ) y')
-
-    palette = get_rgb_palette(len(mycplx.domains))
-    for dom in mycplx.domains:
-        if hasattr(dom, 'color'):
-            continue
-        col = palette.pop(0)
-        dom.color = f'rgb{col}'
-        (~dom).color = f'rgb{col}'
-        
-    # This assumes you provide a complex e.g. from dsdobjects, and also have
-    # colors assigned to domains.
-    pa, ll = get_default_plot_params(mycplx)
-
-    # mess with defaults:
-    pa[3] = 180
-    ll[0][1] = 20
-    ll[1][1] = 20
-
-    svgC, pa, ll = draw_complex(mycplx, pair_angles = pa, loop_lengths = ll,
-                                origin = (0, 0), scale = 10)
-    svg = get_drawing(svgC)
-    svg.append(draw.Text(f'{mycplx.name}:', 14, x = -25, y = 0, 
-                         font_weight = 'bold', text_anchor='middle', valign='center'))
-    svg.savePng('example.png')
-    #print(svg.asSvg())
-
-if __name__ == '__main__':
-    main()
 
