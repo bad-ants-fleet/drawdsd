@@ -19,42 +19,7 @@ Instead, call the preliminary main function from the command line ...
 ```
 ... and then look at the file *example.png*.
 
-
-### 2. A high-level interface:
-**This interface is in prepration, it does not work yet!** 
-This interface does not support customization, so it might not be what you are
-looking for, but it is a good place to start. The input is provided in form
-of a pilfile (e.g. see the file format used for [peppercornenumerator]).
-
-```py
-import drawSvg as draw
-from drawdsd import draw_kernel
-
-# Let's get started with a white backround.
-d = draw.Drawing(800, 800, origin = (-250, -550), displayInline = False)
-d.append(draw.Rectangle(-100, -400, 500, 500, fill='white'))
-
-# Specify a complex in kernel format.
-pilstring = """
-length a = 7
-length b = 5
-length c = 15
-length x = 5
-length y = 15
-length z = 15
-
-A = a x( b c y( a* + c ) z( b* ) )
-"""
-
-# Draw the complex on the canvas.
-for (svgs, pa, ll) in draw_kernel(pilstring, is_file = False):
-    d.extend(svgs)
-
-# Well, let's look it!
-d.savePng('example.png')
-```
-
-### 3. Customizing the SVG output:
+### 2. Customizing the SVG output:
 This example assumes you are somewhat comfortable working with the [dsdobjects]
 library (altough you may not need more than the few lines of code below).
 Customization involves three types of parameters:
@@ -127,7 +92,8 @@ svg.savePng(f'drawing_complex_{mycplx.name}.png')
  - support Bezier curves for loops (as alternative to rectangles).
  - support specification of pair-angles and loop-lengths in kernel string.
  - provide interface for pair-lengths and loop-angles.
- - provide interfaces as shown in README
+ - provide additional high-level input from PIL file only.
+ - provide examples for all interfaces as shown in README.
 
 # Have fun!
 
