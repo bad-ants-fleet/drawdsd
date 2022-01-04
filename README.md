@@ -6,7 +6,7 @@
 ```
 
 ```
-    python drawdsd/interface.py
+    python drawdsd/drawdsd.py
 ```
 
 Check out example.png
