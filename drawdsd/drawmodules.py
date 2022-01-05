@@ -165,11 +165,11 @@ class dsd_module:
     def infer_points(self):
         """Infer remaining points given p1 and the angles.
 
-        TODO: Is there a situation where we need a different
-        starting point than p1?
+        TODO: Need implementation for a complex where p1 is None!
+            'A = x( r + r( + ) x*( + ) t2*( + ) )'
         """
         if self.p1 is None:
-            raise DrawingModuleError('No starting point given!')
+            raise NotImplementedError('No starting point given!')
         if self.i1 is None: # Reverse direction (+180 angle)
             self.i1 = get_coords(self.p1, agl(self.a1+180), self.k1)
         if self.i2 is None:

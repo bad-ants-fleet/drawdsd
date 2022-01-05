@@ -80,14 +80,17 @@ You can find a modified version of this script in the [examples] folder: [custom
 ## Version
  - v0.1
 
-## TODOs
- - draw 5' and 3' ends.
- - draw sequence information.
- - support Bezier curves for loops (as alternative to rectangles).
- - support specification of pair-angles and loop-lengths in kernel string.
+## TODOs (ranking from high to low priority)
+ - draw 5' cubes and 3' arrow-heads (test for 'A = x( a ) y( a )')
+ - support "p3 attachement" (e.g. for 'A = x( r + r( + ) x*( + ) t2*( + ) )')
  - provide interface for pair-lengths and loop-angles.
+ - provide interface for plotting parameters such as path width, font size, etc.
+ - rotate complexes and fix alignment of domain names (e.g. all pair_angles +5)
+ - find nice examples for rendering and make a notebook gallery.
+ - draw sequence information.
  - provide additional high-level input from PIL file only.
- - provide examples for all interfaces as shown in README.
+ - support specification of pair-angles and loop-lengths in kernel string.
+ - support Bezier curves for loops (as alternative to rectangles).
 
 # Have fun!
 
