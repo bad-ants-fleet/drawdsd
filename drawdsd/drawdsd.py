@@ -1,10 +1,14 @@
-#!/usr/bin/env python
+#
+# High-level and mid-level library interface.
+#
+import logging
+log = logging.getLogger(__name__)
 
 from dsdobjects.objectio import set_io_objects, clear_io_objects, read_pil, read_pil_line
 from itertools import combinations
 
 from .rendering import get_drawing, get_rgb_palette, draw_stem, draw_tentacles
-from .drawmodules import dsd_module, dsd_hairpin_module
+from .components import fourway_module, hairpin_module
 
 def agl(a):
     return a % 360
@@ -82,7 +86,7 @@ def get_raw_modules(ptable, stable, segments, pair_angles, scale):
             # Check if it is a hairpin!
             if sg1[1] and sg2[0] == [] and sg1[1][-1] == [sj, dj-1]:
                 th = [stable[i][j] for (i, j) in sg1[1]]
-                m = dsd_hairpin_module(stem, t1, t4, th, scale = scale)
+                m = hairpin_module(stem, t1, t4, th, scale = scale)
                 # Provide the loop_length data
                 if k1: m.k1 = scale * k1
                 if k4: m.k4 = scale * k4
@@ -92,7 +96,7 @@ def get_raw_modules(ptable, stable, segments, pair_angles, scale):
             else:
                 t2 = [stable[i][j] for (i, j) in sg1[1]]
                 t3 = [stable[i][j] for (i, j) in sg2[0]]
-                m = dsd_module(stem, t1, t2, t3, t4, scale = scale)
+                m = fourway_module(stem, t1, t2, t3, t4, scale = scale)
                 # Provide the loop_length data
                 if k1: m.k1 = scale * k1
                 if k2: m.k2 = scale * k2

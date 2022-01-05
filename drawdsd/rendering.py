@@ -132,7 +132,8 @@ def draw_tentacles(dns, dls, dcs, dzs, dos):
             cseg, ci = [(rx2, ry2), (rx3, ry3), (x1, y1)], 0
             for (dname, dlen, dcolor) in zip(ns, ls, cs):
                 tl = dlen/2
-                p = draw.Path(stroke = dcolor, fill_opacity = 0, stroke_width = 5)
+                p = draw.Path(stroke = dcolor, fill_opacity = 0, stroke_width = 5,
+                        stroke_linejoin="round")
                 p.M(round(xs), round(ys)) # move to start.
                 while True:
                     xn, yn = cseg[ci]

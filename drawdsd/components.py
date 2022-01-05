@@ -1,5 +1,5 @@
 #
-# produce the SVG from data.
+# Provides "components" (or "drawingmodules") to calculate plot coordinates.
 #
 import logging
 log = logging.getLogger(__name__)
@@ -95,7 +95,7 @@ def get_a4(a, na): # yellow, from a to na
     assert np.isclose(rel, 0)
     return agl(a)
 
-class dsd_module:
+class fourway_module:
     def __init__(self, pair, t1, t2, t3, t4, scale = 10):
         self.pair = pair
         assert len(pair) == 2
@@ -199,7 +199,7 @@ class dsd_module:
         dos = [self.i1, self.p2, self.i3, self.p4]
         return dns, dls, dcs, dzs, dos
 
-class dsd_hairpin_module:
+class hairpin_module:
     def __init__(self, pair, t1, t4, th, scale = 10):
         self.pair = pair
         assert len(pair) == 2
