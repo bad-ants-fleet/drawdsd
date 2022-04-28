@@ -35,14 +35,14 @@ def estimate_dimensions(svgC):
                 miny =  obj.args['y']
         else:
             for x, y in (x[1:].split(',') for x in obj.args['d'].split()):
-                if int(x) > maxx:
-                    maxx = int(x)
-                if int(x) < minx:
-                    minx = int(x)
-                if int(y) > maxy:
-                    maxy = int(y)
-                if int(y) < miny:
-                    miny = int(y)
+                if int(float(x)) > maxx:
+                    maxx = int(float(x))
+                if int(float(x)) < minx:
+                    minx = int(float(x))
+                if int(float(y)) > maxy:
+                    maxy = int(float(y))
+                if int(float(y)) < miny:
+                    miny = int(float(y))
     dimx = maxx - minx
     dimy = maxy - miny
     return dimx, dimy, minx, miny
@@ -163,3 +163,29 @@ def draw_tentacles(dns, dls, dcs, dzs, dos):
                     xs, ys = xn, yn
                 yield p, t
 
+def draw_arrowheads(end_point, start_point, c, which_end):
+    #calculate arrowhead points (3-4points)
+    end_to_start = np.array([start_point[0] - end_point[0], start_point[1] - end_point[1]])
+    unit_ets = end_to_start/np.linalg.norm(end_to_start)
+    
+    if which_end == "3":
+        p1 = end_point + np.array([unit_ets[1], -unit_ets[0]])*2    #2 units offset
+        p2 = end_point + unit_ets*18 + np.array([unit_ets[1], -unit_ets[0]])*2    #18 units
+        p3 = p2 + np.array([unit_ets[1], -unit_ets[0]])*12   #12 units
+        
+        arrow = draw.Path(fill=c, stroke=c, stroke_width=0.002)
+        arrow.M(p1[0], p1[1]).L(p2[0], p2[1]).L(p3[0], p3[1]).L(p1[0], p1[1])
+        
+    elif which_end == "5":
+        p1 = end_point + np.array([-unit_ets[1], unit_ets[0]])*2
+        p2 = end_point + unit_ets*12 + np.array([-unit_ets[1], unit_ets[0]])*2
+        p3 = end_point + unit_ets*12 + np.array([-unit_ets[1], unit_ets[0]])*12
+        p4 = end_point + np.array([-unit_ets[1], unit_ets[0]])*12 #2+10
+        
+        arrow = draw.Path(fill=c, stroke=c, stroke_width=0.002)
+        arrow.M(p1[0], p1[1]).L(p2[0], p2[1]).L(p3[0], p3[1]).L(p4[0], p4[1]).L(p1[0], p1[1])
+    
+    #the arrowhead should have a minimal size?
+    
+    return arrow
+    

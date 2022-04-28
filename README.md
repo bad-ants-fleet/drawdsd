@@ -81,7 +81,7 @@ You can find a modified version of this script in the [examples] folder: [custom
  - v0.1
 
 ## TODOs (ranking from high to low priority)
- - draw 5' squares and 3' arrow-heads (test for 'A = x( a ) y( a )')
+~~- draw 5' squares and 3' arrow-heads (test for 'A = x( a ) y( a )')~~
  - force text on top of drawings.
  - support "p3 attachment" (e.g. for 'A = x( r + r( + ) x*( + ) t2*( + ) )')
  - provide interface for pair-lengths and loop-angles.

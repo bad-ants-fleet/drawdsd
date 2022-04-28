@@ -3,15 +3,23 @@
 #
 import logging
 log = logging.getLogger(__name__)
+import math
+import numpy as np
 
 from dsdobjects.objectio import set_io_objects, clear_io_objects, read_pil, read_pil_line
 from itertools import combinations
 
-from .rendering import get_drawing, get_rgb_palette, draw_stem, draw_tentacles
+from .rendering import get_drawing, get_rgb_palette, draw_stem, draw_tentacles, draw_arrowheads
 from .components import fourway_module, hairpin_module
 
 def agl(a):
     return a % 360
+
+def almost_same(point1, point2):
+    if math.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2) < 1:
+        return True
+    else:
+        return False
 
 def get_default_plot_params(cplx):
     """ Produce the defaults for:
@@ -195,6 +203,172 @@ def get_final_modules(cplx, pair_angles, loop_lengths, origin = (0, 0), scale = 
         m.infer_points()
     return modules
 
+def get_endpoints_arrowhead(modules):
+    """
+    
+    Loops through modules and checks if any 5' ends connect to (touch) any 3' ends 
+    and vice versa. If the answer is no, the 5' ends get a square, the 3' ends an arrow.
+    Uses draw_arrowheads() from rendering.py.
+    """
+    
+    #get endpoints
+    fives = []
+    threes = []
+    
+    for mod in modules:
+    
+        if len(mod.tentacle_data()[0]) == 3: #hairpin
+            end5 = [mod.tentacle_data()[3][0]]
+            end3 = [mod.tentacle_data()[4][2]]
+        elif len(mod.tentacle_data()[0]) == 4: #4way
+            end5 = [mod.tentacle_data()[3][0], mod.tentacle_data()[3][2]]
+            end3 = [mod.tentacle_data()[4][3], mod.tentacle_data()[4][1]]
+        else:
+            print("bad module in get_endpoints")
+            break
+            
+        fives.append(end5)
+        threes.append(end3)
+    
+    #loop through and check closeness of opposite strand ends (except 0-0 and last-last)
+    objects_inside = []
+    
+    curr_m = 0
+    for m5 in fives:
+        curr_end = 0
+        for ends5 in m5:
+            loose = True
+            
+            
+            for m3 in threes:
+                for ends3 in m3:
+                    if almost_same(ends5, ends3):
+                        loose = False
+                
+            if loose: #==True
+                    
+                i1, i2, i3, i4 = modules[curr_m].stem_data()[0:4]
+                c_stem = modules[curr_m].stem_data()[4]
+                    
+                if curr_end == 0: #p1
+                    if almost_same(fives[curr_m][curr_end], i1):
+                        arrow5 = draw_arrowheads(i1, i2, c_stem, "5")
+                    else:
+                        c_tent = modules[curr_m].tentacle_data()[2][0] #p1 tent
+                        c_tent = c_tent[0] #- first item
+                            
+                        arrow5 = draw_arrowheads(ends5, i1, c_tent, "5")
+                        
+                elif curr_end == 1: #p3
+                    if almost_same(fives[curr_m][curr_end], i3):
+                        arrow5 = draw_arrowheads(i3, i4, c_stem, "5")
+                    else:
+                        c_tent = modules[curr_m].tentacle_data()[2][2] #p3 tent
+                        c_tent = c_tent[0] #- first item
+                            
+                        arrow5 = draw_arrowheads(ends5, i3, c_tent, "5")
+                    
+                objects_inside.append(arrow5)
+                            
+            curr_end += 1
+        curr_m += 1
+    
+    #do it also with 3' ends
+    curr_m = 0
+    for m3 in threes:
+        curr_end = 0
+                
+        for ends3 in m3:
+            loose = True
+            
+            for m5 in fives:
+                for ends5 in m5:
+                    if almost_same(ends5, ends3):
+                        loose = False        
+                        
+            if loose:
+
+                i1, i2, i3, i4 = modules[curr_m].stem_data()[0:4]
+                c_stem = modules[curr_m].stem_data()[4]
+                    
+                if curr_end == 0: #p4
+                    if almost_same(threes[curr_m][curr_end], i4):
+                        arrow3 = draw_arrowheads(i4, i3, c_stem, "3")
+                    else:
+                        c_tent = modules[curr_m].tentacle_data()[2][-1] #p4 tent
+                        c_tent = c_tent[0] #- first item
+                            
+                        arrow3 = draw_arrowheads(ends3, i4, c_tent, "3")
+                        
+                elif curr_end == 1: #p2
+                    if almost_same(threes[curr_m][curr_end], i2):
+                        arrow3 = draw_arrowheads(i2, i1, c_stem, "3")
+                    else:
+                        c_tent = modules[curr_m].tentacle_data()[2][1] #p2 tent
+                        c_tent = c_tent[0] #- first item
+                            
+                        arrow3 = draw_arrowheads(ends3, i2, c_tent, "3")
+                    
+                objects_inside.append(arrow3)
+                
+            
+            curr_end += 1
+        curr_m += 1
+    
+    return objects_inside
+
+def push_apart_touching_ends(modules):
+    """ If the main 5' and 3' ends touch, push them apart a visible amount."""
+    
+    first_p1 = modules[0].tentacle_data()[3][0]
+    first_i1, first_i2 = modules[0].stem_data()[0:2]
+    last_p4 = modules[-1].tentacle_data()[4][-1]
+    last_i3, last_i4 = modules[-1].stem_data()[2:4]
+    
+    loose = True
+    for mod in modules:
+        if hasattr(mod, 'mp2'): # It is not a hairpin.
+            p3 = mod.tentacle_data()[3][2]
+            if almost_same(last_p4, p3):
+                loose = False
+    
+    if loose: #if 3' on last module
+        if almost_same(last_p4, first_p1): #if 5' and 3' touch
+            #move these two points apart
+            if almost_same(first_p1, first_i1): #no tentacle
+                end_to_start = np.array([first_i1[0] - first_i2[0], first_i1[1] - first_i2[1]])
+                unit_ets = end_to_start/np.linalg.norm(end_to_start)
+                new_point = first_i1 - unit_ets*5
+                
+                modules[0].i1 = new_point #i1 rewritten
+                modules[0].p1 = new_point #p1 rewritten
+
+            else: #tentacle
+                end_to_start = np.array([first_p1[0] - first_i1[0], first_p1[1] - first_i1[1]])
+                unit_ets = end_to_start/np.linalg.norm(end_to_start)
+                new_point = first_i1 - unit_ets*5
+                
+                modules[0].p1 = new_point #p1 rewritten
+            
+            #3'
+            if almost_same(last_p4, last_i4): #no tentacle
+                end_to_start = np.array([last_i4[0] - last_i3[0], last_i4[1] - last_i3[1]])
+                unit_ets = end_to_start/np.linalg.norm(end_to_start)
+                new_point = last_i4 - unit_ets*5
+                
+                modules[-1].i4 = new_point #i1 rewritten
+                modules[-1].p4 = new_point #p1 rewritten
+
+            else: #tentacle
+                end_to_start = np.array([last_p4[0] - last_i4[0], last_p4[1] - last_i4[1]])
+                unit_ets = end_to_start/np.linalg.norm(end_to_start)
+                new_point = last_i4 - unit_ets*5
+                
+                modules[-1].p4 = new_point #p1 rewritten
+        
+    return modules
+
+
 def draw_complex(cplx, pair_angles = None, loop_lengths = None, 
                  origin = (0, 0), scale = 10):
     """Returns the SVG image of a complex.
@@ -227,10 +401,16 @@ def draw_complex(cplx, pair_angles = None, loop_lengths = None,
 
     modules = get_final_modules(cplx, pair_angles, loop_lengths, 
                                 origin = origin, scale = scale)
+
+    modules = push_apart_touching_ends(modules)
+
     objects = []
+    
     for m in modules:
         objects.extend(draw_stem(*m.stem_data()))
         [objects.extend(x) for x in draw_tentacles(*m.tentacle_data())]
-
+    
+    arrows = get_endpoints_arrowhead(modules)
+    objects.extend(arrows)
+                
     return objects, pair_angles, loop_lengths
-
