@@ -414,3 +414,4 @@ def draw_complex(cplx, pair_angles = None, loop_lengths = None,
     objects.extend(arrows)
                 
     return objects, pair_angles, loop_lengths
+

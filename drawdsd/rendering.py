@@ -188,4 +188,4 @@ def draw_arrowheads(end_point, start_point, c, which_end):
     #the arrowhead should have a minimal size?
     
     return arrow
-    
+
