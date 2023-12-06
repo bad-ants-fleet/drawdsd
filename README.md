@@ -6,7 +6,7 @@ generated images that are *almost* exactly like you want them? Then try this.
 ## Test and install
 ```sh
     python -m pytest tests/ -vs
-    python setup.py install
+    pip install .
 ```
 
 ## Quickstart
@@ -84,6 +84,7 @@ You can find a modified version of this script in the [examples] folder: [custom
  - draw 5' squares and 3' arrow-heads (test for 'A = x( a ) y( a )')
  - force text on top of drawings.
  - support "p3 attachment" (e.g. for 'A = x( r + r( + ) x*( + ) t2*( + ) )')
+ - fix loop-lengths for hairpins
  - provide interface for pair-lengths and loop-angles.
  - provide interface for plotting parameters such as path width, font size, etc.
  - rotate complexes and fix alignment of domain names (e.g. all pair_angles +5)
