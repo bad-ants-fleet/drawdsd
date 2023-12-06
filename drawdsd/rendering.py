@@ -5,7 +5,7 @@ import logging
 log = logging.getLogger(__name__)
 
 import numpy as np
-import drawSvg as draw
+import drawsvg as draw
 from colorsys import hls_to_rgb
 
 dfont = 'bold' # TODO: need some interfacd for plotting parameters.
@@ -13,10 +13,17 @@ dfont = 'bold' # TODO: need some interfacd for plotting parameters.
 def get_drawing(svgC):
     # Initialize the SVG image & background
     dimx, dimy, minx, miny = estimate_dimensions(svgC)
-    svg = draw.Drawing(dimx+100, dimy+100, 
-                       origin = (-50+minx, -50-dimy-miny), displayInline = False)
-    svg.append(draw.Rectangle(-50+minx, -50-dimy-miny, 
-                              dimx+100, dimy+100, fill='white'))
+
+    # Add a 50px frame around the molecule
+    dimx += 100
+    dimy += 100
+    minx -= 50
+    miny -= 50
+    
+    svg = draw.Drawing(dimx, dimy, 
+                       origin = (minx, miny), displayInline = False)
+    svg.append(draw.Rectangle(minx, miny, 
+                              dimx, dimy, fill='white'))
  
     svg.extend(svgC)
     return svg

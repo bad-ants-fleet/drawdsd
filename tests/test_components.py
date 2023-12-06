@@ -3,7 +3,7 @@
 import unittest
 import numpy as np
 
-from drawdsd.drawmodules import half_angle, get_coords, get_a1, get_a2, get_a3, get_a4
+from drawdsd.components import half_angle, get_coords, get_a1, get_a2, get_a3, get_a4
 
 SKIP = False
 
