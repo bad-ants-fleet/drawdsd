@@ -96,32 +96,57 @@ def get_a4(a, na): # yellow, from a to na
     return agl(a)
 
 class fourway_module:
-    def __init__(self, pair, t1, t2, t3, t4, scale = 10):
+    def __init__(self, pair, t1, t2, t3, t4, p15, p23, p35, p43, scale = 10):
         self.pair = pair
         assert len(pair) == 2
         assert len(pair[0]) == len(pair[1])
-        self.plength = scale * len(pair[0])
+        self.plength = scale * (len(pair[0])+1)
         self.pnameT = pair[0].name
         self.pnameB = pair[1].name
         assert pair[0].color == pair[1].color
         self.pcolor = pair[0].color
 
+        self.p15 = p15
+        self.p23 = p23
+        self.p35 = p35
+        self.p43 = p43
+
         self.n1 = [dom.name for dom in t1] 
-        self.l1 = [scale * dom.length for dom in t1] 
+        self.l1 = [scale * (dom.length+1) for dom in t1] 
         self.k1 = sum(self.l1)
         self.c1 = [dom.color for dom in t1] 
+        self.m1 = [None for dom in t1] 
+        if t1 and p15: 
+            self.m1[0] = 'p5' 
+            self.p15 = False
+
         self.n2 = [dom.name for dom in t2] 
-        self.l2 = [scale * dom.length for dom in t2] 
+        self.l2 = [scale * (dom.length+1) for dom in t2] 
         self.k2 = sum(self.l2)
         self.c2 = [dom.color for dom in t2] 
+        self.m2 = [False for dom in t2] 
+        if t2 and p23: 
+            self.m2[0] = 'p3' 
+            self.p23 = False
+
         self.n3 = [dom.name for dom in t3] 
-        self.l3 = [scale * dom.length for dom in t3] 
+        self.l3 = [scale * (dom.length+1) for dom in t3] 
         self.k3 = sum(self.l3)
         self.c3 = [dom.color for dom in t3] 
+        self.m3 = [None for dom in t3] 
+        if t3 and p35:
+            self.m3[0] = 'p5' 
+            self.p35 = False
+
         self.n4 = [dom.name for dom in t4] 
-        self.l4 = [scale * dom.length for dom in t4] 
+        self.l4 = [scale * (dom.length+1) for dom in t4] 
         self.k4 = sum(self.l4)
         self.c4 = [dom.color for dom in t4] 
+        self.m4 = [False for dom in t4] 
+        if t4 and p43: 
+            self.m4[0] = 'p3' 
+            self.p43 = False
+        
 
         # get/set angles
         self._pma1 = None # prev module angle 1
@@ -187,6 +212,7 @@ class fourway_module:
 
     def stem_data(self):
         return (self.i1, self.i2, self.i3, self.i4, 
+                self.p15, self.p23, self.p35, self.p43, 
                 self.pcolor, self.angle, self.plength, 
                 self.pnameT, self.pnameB)
 
@@ -197,30 +223,44 @@ class fourway_module:
         dcs = [self.c1, self.c2, self.c3, self.c4]
         dzs = [self.p1, self.i2, self.p3, self.i4]
         dos = [self.i1, self.p2, self.i3, self.p4]
-        return dns, dls, dcs, dzs, dos
+        dms = [self.m1, self.m2, self.m3, self.m4]
+        return dns, dls, dcs, dzs, dos, dms
 
 class hairpin_module:
-    def __init__(self, pair, t1, t4, th, scale = 10):
+    def __init__(self, pair, t1, t4, th, p15, p43, scale = 10):
         self.pair = pair
         assert len(pair) == 2
         assert len(pair[0]) == len(pair[1])
-        self.plength = scale * len(pair[0])
+        self.plength = scale * (len(pair[0])+1)
         self.pnameT = pair[0].name
         self.pnameB = pair[1].name
         assert pair[0].color == pair[1].color
         self.pcolor = pair[0].color
 
+        self.p15 = p15
+        self.p43 = p43
+
+
         self.n1 = [dom.name for dom in t1] 
-        self.l1 = [scale * dom.length for dom in t1] 
+        self.l1 = [scale * (dom.length+1) for dom in t1] 
         self.k1 = sum(self.l1)
         self.c1 = [dom.color for dom in t1] 
+        self.m1 = [False for dom in t1] 
+        if t1 and p15: 
+            self.m1[0] = 'p5' 
+            self.p15 = False
         self.n4 = [dom.name for dom in t4] 
-        self.l4 = [scale * dom.length for dom in t4] 
+        self.l4 = [scale * (dom.length+1) for dom in t4] 
         self.k4 = sum(self.l4)
         self.c4 = [dom.color for dom in t4] 
+        self.m4 = [False for dom in t4] 
+        if t4 and p43: 
+            self.m4[0] = 'p3' 
+            self.p43 = False
         self.nh = [dom.name for dom in th] 
-        self.lh = [scale * dom.length for dom in th] 
+        self.lh = [scale * (dom.length+1) for dom in th] 
         self.ch = [dom.color for dom in th] 
+        self.mh = [False for dom in th] 
 
         # get/set Angle/Coordinates
         self._pma1 = None
@@ -262,6 +302,7 @@ class hairpin_module:
 
     def stem_data(self):
         return (self.i1, self.i2, self.i3, self.i4, 
+                self.p15, False, False, self.p43, 
                 self.pcolor, self.angle, self.plength, 
                 self.pnameT, self.pnameB)
 
@@ -272,5 +313,6 @@ class hairpin_module:
         dcs = [self.c1, self.ch, self.c4]
         dzs = [self.p1, self.i2, self.i4]
         dos = [self.i1, self.i3, self.p4]
-        return dns, dls, dcs, dzs, dos
+        dms = [self.m1, self.mh, self.m4]
+        return dns, dls, dcs, dzs, dos, dms
 

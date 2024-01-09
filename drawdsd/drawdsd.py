@@ -26,7 +26,7 @@ def get_default_plot_params(cplx):
         nlen, llen = [], 0
         for di, pair in enumerate(strand):
             if pair is None: # unpaired
-                llen += stable[si][di].length
+                llen += (stable[si][di].length+1)
             else: # pair
                 if pair > (si, di):
                     pair_angles.append(0)
@@ -45,6 +45,7 @@ def get_segments(ptable, loop_lengths):
     segments = {}
     identity, seg, pos = None, [[], []], 0
     ll1, ll2, lli = 0, 0, 0 # loop_length stuff
+    p5, p3 = True, False
     for si, strand in enumerate(ptable):
         for di, pair in enumerate(strand):
             if pos:
@@ -55,16 +56,21 @@ def get_segments(ptable, loop_lengths):
                 pos += 1
                 lli += 1
                 if identity is not None:
-                    segments[identity] = seg, (ll1, ll2)
+                    segments[identity] = seg, (ll1, ll2), (p5, p3)
                     identity, seg, pos = None, [[], []], 1
                     ll1, ll2 = 0, 0
+                    p5, p3 = False, False
                 identity = (si, di), pair
             else:
                 seg[pos].append([si, di])
         # Strand break means we start a new segment!
-        segments[identity] = seg, (ll1, ll2)
+        p3 = True
+        segments[identity] = seg, (ll1, ll2), (p5, p3)
         identity, seg, pos = None, [[], []], 0
         ll1, ll2, lli = 0, 0, 0
+        p5, p3 = True, False
+    for k,v in segments.items():
+        print(k,v)
     return segments
 
 def get_raw_modules(ptable, stable, segments, pair_angles, scale):
@@ -76,8 +82,8 @@ def get_raw_modules(ptable, stable, segments, pair_angles, scale):
                 continue
             (sj, dj) = pair
             # Get both segments by their identifier.
-            sg1, (k1, k2) = segments[(si, di), (sj, dj)]
-            sg2, (k3, k4) = segments[(sj, dj), (si, di)]
+            sg1, (k1, k2), (p15, p23) = segments[(si, di), (sj, dj)]
+            sg2, (k3, k4), (p35, p43) = segments[(sj, dj), (si, di)]
             # The stem is formed via the single paired domain.
             stem = [stable[si][di], stable[sj][dj]] 
             # The tentacles listed in segments.
@@ -86,7 +92,7 @@ def get_raw_modules(ptable, stable, segments, pair_angles, scale):
             # Check if it is a hairpin!
             if sg1[1] and sg2[0] == [] and sg1[1][-1] == [sj, dj-1]:
                 th = [stable[i][j] for (i, j) in sg1[1]]
-                m = hairpin_module(stem, t1, t4, th, scale = scale)
+                m = hairpin_module(stem, t1, t4, th, p15, p43, scale = scale)
                 # Provide the loop_length data
                 if k1: m.k1 = scale * k1
                 if k4: m.k4 = scale * k4
@@ -96,7 +102,7 @@ def get_raw_modules(ptable, stable, segments, pair_angles, scale):
             else:
                 t2 = [stable[i][j] for (i, j) in sg1[1]]
                 t3 = [stable[i][j] for (i, j) in sg2[0]]
-                m = fourway_module(stem, t1, t2, t3, t4, scale = scale)
+                m = fourway_module(stem, t1, t2, t3, t4, p15, p23, p35, p43, scale = scale)
                 # Provide the loop_length data
                 if k1: m.k1 = scale * k1
                 if k2: m.k2 = scale * k2
