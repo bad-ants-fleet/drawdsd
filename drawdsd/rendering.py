@@ -7,9 +7,20 @@ log = logging.getLogger(__name__)
 import numpy as np
 import drawsvg as draw
 from colorsys import hls_to_rgb
+from .components import scale
+
 
 dfont = 'bold' # TODO: need some interfacd for plotting parameters.
 ffamily = 'Courier'
+
+def a_lt_b(a, b):
+    return a < b and not np.isclose(a, b)
+
+def a_eq_b(a, b):
+    return np.isclose(a, b)
+
+def a_gt_b(a, b):
+    return a > b and not np.isclose(a, b)
 
 def get_drawing(svgC):
     # Initialize the SVG image & background
@@ -64,18 +75,13 @@ def get_rgb_palette(num):
     return [(int(r*255), int(g*255), int(b*255)) for (r,g,b) in palette]
 
 def draw_stem(i1, i2, i3, i4, p15, p23, p35, p43, color, angle, length, nameT, nameB):
+    circles = []
     bground = draw.Path(stroke_width=0, fill='black', fill_opacity=.3)
-    dompath = draw.Path(stroke_width=5, stroke=color, fill_opacity=0)
+    dompath = dom_path(color)
 
     (x1, y1) = i1
-    (x10, y10) = i1
-    (x11, y11) = i1
-    (x12, y12) = i1
     (x2, y2) = i2
     (x3, y3) = i3
-    (x30, y30) = i3
-    (x31, y31) = i3
-    (x32, y32) = i3
     (x4, y4) = i4
 
     bground.M(round(x1), round(y1)).L(
@@ -83,152 +89,247 @@ def draw_stem(i1, i2, i3, i4, p15, p23, p35, p43, color, angle, length, nameT, n
               round(x3), round(y3)).L(
               round(x4), round(y4))
 
-    oS = 6
+    tx, ty = (x1+x2)/2, (y1+y2)/2 
+    ux, uy = unitVec((x1, y1), (x2, y2))
+    dt1 = dom_txt(nameT, tx, ty, ux, uy)
+    cx, cy = x1 + ux*scale/2, y1 + uy*scale/2
+    for _ in range(length):
+        #circles.append(nuc_circle(cx, cy, color, ux, uy))
+        circles.append(nuc_txt('N', cx, cy, ux, uy))
+        cx, cy = cx + ux*scale, cy + uy*scale
+ 
     if p15:
-        x10, y10 = x1+(x2-x1)/length*(oS+5), y1+(y2-y1)/length*(oS+5)
-        x11, y11 = x10-(y2-y1)/length*oS, y10+(x2-x1)/length*oS
-        x12, y12 = x11-(x2-x1)/length*oS, y11-(y2-y1)/length*oS
-        x1,  y1  = x12+(y2-y1)/length*oS, y12-(x2-x1)/length*oS, 
+        dompath = draw_5prime(dompath, x1, y1, ux, uy)
+    else:
+        dompath.M(round(x1), round(y1))
+
+    if p23:
+        dompath = draw_3prime(dompath, x2, y2, ux, uy)
+    else:
+        dompath.L(round(x2), round(y2))
+
+    tx, ty = (x3+x4)/2, (y3+y4)/2 
+    ux, uy = unitVec((x3, y3), (x4, y4))
+    dt2 = dom_txt(nameT, tx, ty, ux, uy)
+    cx, cy = x3 + ux*scale/2, y3 + uy*scale/2
+    for _ in range(length):
+        #circles.append(nuc_circle(cx, cy, color, ux, uy))
+        circles.append(nuc_txt('N', cx, cy, ux, uy))
+        cx, cy = cx + ux*scale, cy + uy*scale
+ 
     if p35:
-        x30, y30 = x3+(x4-x3)/length*(oS+5), y3+(y4-y3)/length*(oS+5)
-        x31, y31 = x30-(y4-y3)/length*oS, y30+(x4-x3)/length*oS
-        x32, y32 = x31-(x4-x3)/length*oS, y31-(y4-y3)/length*oS
-        x3, y3 = x32+(y4-y3)/length*oS, y32-(x4-x3)/length*oS, 
+        dompath = draw_5prime(dompath, x3, y3, ux, uy)
+    else:
+        dompath.M(round(x3), round(y3))
 
-    dompath.M(round(x10), round(y10)).L(
-              round(x11), round(y11)).L(
-              round(x12), round(y12)).L(
-              round(x1), round(y1)).L(
-              round(x2), round(y2)).M(
-              round(x30), round(y30)).L(
-              round(x31), round(y31)).L(
-              round(x32), round(y32)).L(
-              round(x3), round(y3)).L(
-              round(x4), round(y4))
+    if p43:
+        dompath = draw_3prime(dompath, x4, y4, ux, uy)
+    else:
+        dompath.L(round(x4), round(y4))
 
-    cT = 10
-    tx, ty = (x1+x2)/2, (y1+y2)/2 # point in the middle on straight line
-    tx, ty = tx-(y2-y1)/length*cT, ty+(x2-x1)/length*cT
-    tagT = draw.Text(nameT, 14, x = round(tx), y = round(ty), 
-                        font_family = ffamily,
-                        font_weight = dfont, 
-                        dominant_baseline='middle',
-                        text_anchor='middle')
+    return bground, dompath, dt1, dt2, *circles
 
-    tx, ty = (x3+x4)/2, (y3+y4)/2 # point in the middle on straight line
-    tx, ty = tx-(y4-y3)/length*cT, ty+(x4-x3)/length*cT
-    tagB = draw.Text(nameB, 14, x = round(tx), y = round(ty), 
-                        font_family = ffamily,
-                        font_weight = dfont, 
-                        dominant_baseline='middle',
-                        text_anchor='middle')
+def dom_path(dcolor, sw = None, da = None):
+    if sw is None:
+        sw = 10
+    return draw.Path(stroke = dcolor, 
+                     fill_opacity = 0, 
+                     stroke_width = sw, 
+                     stroke_dasharray = da,
+                     stroke_linejoin = "round")
 
-    return bground, dompath, tagT, tagB
+def dom_txt(dname, x, y, ux, uy):
+    x = x - uy*scale
+    y = y + ux*scale
+    return draw.Text(dname, round(scale), x = round(x), y = round(y), 
+                     font_family = ffamily,
+                     font_weight = dfont, 
+                     dominant_baseline='middle',
+                     text_anchor='middle')
+
+def nuc_circle(x, y, c, ux, uy, r = None):
+    #x = x + uy*scale/3
+    #y = y - ux*scale/3
+    if r is None:
+        r = scale/3
+    return draw.Circle(x, y, r, fill = c, stroke_width = 1, stroke = 'black')
+
+def nuc_txt(char, x, y, ux, uy):
+    x = x + uy*scale/3
+    y = y - ux*scale/3
+    return draw.Text(char, round(scale*2/3), round(x), round(y), 
+                     font_family = ffamily,
+                     font_weight = dfont, 
+                     dominant_baseline='middle',
+                     text_anchor='middle')
+
+def distance(p1, p2):
+    # (x1, y1) = p1
+    # (x2, y2) = p2
+    return np.sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
+
+def unitVec(p1, p2, dist = None):
+    if dist is None:
+        dist = distance(p1, p2) 
+    return (p2[0]-p1[0])/dist, (p2[1]-p1[1])/dist
+
+def get_detour(p0, pN, dtarget):
+    """ Return a sequence of points for a detour satisfying dtarget.
+    """
+    # Let's do a simple rectangle: M(x0, y0).L(x1, y1).L(x2, y2).L(xN, yN)
+    dist_0N = distance(p0, pN)
+    ddetour = dtarget - dist_0N
+    (ux, uy) = unitVec(p0, pN, dist_0N)
+    p1 = p0[0] - uy*ddetour/2, p0[1] + ux*ddetour/2
+    p2 = pN[0] - uy*ddetour/2, pN[1] + ux*ddetour/2
+    sidelen = distance(p0, p1)
+    assert np.isclose(sidelen, distance(p2, pN))
+    assert np.isclose(dtarget, dist_0N + 2*sidelen)
+    return p0, p1, p2, pN
+
+def draw_5prime(p, xs, ys, ux, uy):
+    x50, y50 = xs  + ux*scale/1.5,   ys  + uy*scale/1.5
+    x51, y51 = x50 - uy*scale/2, y50 + ux*scale/2 
+    x52, y52 = x51 - ux*scale/4, y51 - uy*scale/4
+    x53, y53 = x52 + uy*scale/2, y52 - ux*scale/2
+    return p.M(round(x50), round(y50)).L(
+               round(x51), round(y51)).L(
+               round(x52), round(y52)).L(
+               round(x53), round(y53))
+
+def draw_3prime(p, xn, yn, ux, uy):
+    x30, y30 = xn - ux*scale*1.5, yn - uy*scale*1.5
+    x31, y31 = x30 + ux*scale, y30 + uy*scale
+    x32, y32 = x30 - uy*scale, y30 + ux*scale
+    return p.L(round(x30), round(y30)).L(
+               round(x31), round(y31)).L(
+               round(x32), round(y32))
 
 def draw_tentacles(dns, dls, dcs, dzs, dos, dms):
+    """
+    """
+
     # names, lengths, colors, startpoint, endpoint
     for ns, ls, cs, (x0, y0), (x1, y1), es in zip(dns, dls, dcs, dzs, dos, dms):
-        length = sum(ls) # total length of concatenated domains
-        linelen = np.sqrt((x1-x0)**2 + (y1-y0)**2) # end-to-end distance
+        slength = scale * sum(ls) # total length of concatenated backbones
+        linelen = distance((x0, y0), (x1, y1))
+        if a_eq_b(linelen, 0):
+            continue # Necessary 
 
         # Append a fake domain if the distance between points is 
         # longer than the length of all domains.
-        if not np.isclose(length, linelen) and linelen > length:
+        if a_lt_b(slength, linelen):
             ns.append('')
-            ls.append(linelen-length)
+            ls.append((linelen-slength)/scale)
             cs.append('black')
-            length = sum(ls)
+            es.append(False)
+            slength = scale * sum(ls)
+            assert a_eq_b(slength, linelen)
 
-        if np.isclose(length, linelen):
+        if a_eq_b(slength, linelen):
+            ux, uy = unitVec((x0, y0), (x1, y1), linelen)
             xs, ys = x0, y0 # start coordinates
+            circles = []
             for (dname, dlen, dcolor, end) in zip(ns, ls, cs, es):
-                # Draw path
-                (sw, da) = (5, None) if dname else (2, 5) # fake domain
-                p = draw.Path(stroke = dcolor, fill_opacity = 0,
-                              stroke_width = sw, stroke_dasharray = da)
-                xn, yn = xs+(x1-x0)/length*dlen, ys+(y1-y0)/length*dlen
-
+                # Initialize path
+                sw, da = (None, None) if dname else (2, 5) # fake domain
+                p = dom_path(dcolor, sw, da)
+                sdlen = scale * dlen
+                xn, yn = xs + ux*sdlen, ys + uy*sdlen
                 if end == 'p5':
-                    oS = 6
-                    ux = (x1-x0)/length # unit x component
-                    uy = (y1-y0)/length # unit y component
-                    x50, y50 = xs+ux*(oS+5), ys+uy*(oS+5)
-                    x51, y51 = x50-uy*oS, y50+ux*oS
-                    x52, y52 = x51-ux*oS, y51-uy*oS
-                    xs, ys = x52+uy*oS, y52-ux*oS
-                    p.m(round(x50), round(y50)).L(
-                        round(x51), round(y51)).L(
-                        round(x52), round(y52)).L(
-                        round(xs), round(ys)).L(
-                        round(xn), round(yn))#.L( round(x3),round(y3))
+                    p = draw_5prime(p, xs, ys, ux, uy)
+                    p.L(round(xn), round(yn))
                 elif end == 'p3':
-                    oS = 8
-                    ux = (x1-x0)/length # unit x component
-                    uy = (y1-y0)/length # unit y component
-                    x30, y30 = xn-ux*(oS+5), yn-uy*(oS+5)
-                    x32, y32 = x30-uy*oS, y30+ux*oS
-                    p.m(round(xs), round(ys)).L(
-                        round(x30), round(y30)).L(
-                        round(xn), round(yn)).L(
-                        round(x32),round(y32))
+                    p.M(round(xs), round(ys))
+                    p = draw_3prime(p, xn, yn, ux, uy)
                 else:
-                    p.m(round(xs), round(ys)).L(round(xn), round(yn))
-
+                    p.M(round(xs), round(ys))
+                    p.L(round(xn), round(yn))
                 # Draw nametag
-                cT = 10
                 tx, ty = (xs+xn)/2, (ys+yn)/2 # point in the middle on straight line
-                tx, ty = tx-(yn-ys)/dlen*cT, ty+(xn-xs)/dlen*cT
-                t = draw.Text(dname, 14, x = round(tx), y = round(ty), 
-                        font_family = ffamily,
-                        font_weight = dfont, 
-                        dominant_baseline='middle',
-                        text_anchor='middle')
-                #t = draw.Circle(round(tx), round(ty), 10, 
-                #            fill='white', stroke_width=2, stroke='black')
-                yield p, t
+                dt = dom_txt(dname, tx, ty, ux, uy)
+                if dname:
+                    cx, cy = xs + ux*scale/2, ys + uy*scale/2
+                    for _ in range(dlen):
+                        #circles.append(nuc_circle(cx, cy, dcolor, ux, uy))
+                        circles.append(nuc_txt('N', cx, cy, ux, uy))
+                        cx, cy = cx + ux*scale, cy + uy*scale
                 xs, ys = xn, yn
+                yield p, dt
+                yield circles
 
         else: # not enough space, let's draw a rectangle!
-            assert length > linelen
-            missing = length - linelen
-            # The points of the rectangle: M(x0, y0).L(rx2, ry2).L(rx3, ry3).L(x1, y1)
-            (rx2, ry2) = x0-(y1-y0)/linelen*missing/2, y0+(x1-x0)/linelen*missing/2
-            (rx3, ry3) = x1-(y1-y0)/linelen*missing/2, y1+(x1-x0)/linelen*missing/2
-            slen = np.sqrt((rx2-x0)**2 + (ry2-y0)**2)
-            assert np.isclose(length, linelen+2*slen)
-
-            xs, ys = x0, y0
-            cseg, ci = [(rx2, ry2), (rx3, ry3), (x1, y1)], 0
-            for (dname, dlen, dcolor) in zip(ns, ls, cs):
-                tl = dlen/2
-                p = draw.Path(stroke = dcolor, fill_opacity = 0, stroke_width = 5,
-                        stroke_linejoin="round")
-                p.M(round(xs), round(ys)) # move to start.
+            assert slength > linelen
+            detour = get_detour((x0, y0), (x1, y1), slength)
+            #for p in detour:
+            #    yield [draw.Circle(*p, scale/3, stroke_width = 1, stroke = 'black', fill = 'black')]
+            circles = []
+            (xs, ys), di = detour[0], 1
+            off = scale/2
+            for (dname, dlen, dcolor, end) in zip(ns, ls, cs, es):
+                print(dname, dlen, dcolor, end)
+                rsdlen = scale * dlen # remaining scaled domain length
+                tlabel = scale * dlen / 2
+                p = dom_path(dcolor)
                 while True:
-                    xn, yn = cseg[ci]
-                    plen = np.sqrt((xn-xs)**2 + (yn-ys)**2) # Rename
-
-                    # Draw nametag if we are further than half-way.
-                    if np.isclose(tl, plen) or tl < plen:
-                        tx, ty = xs+(xn-xs)/plen*tl, ys+(yn-ys)/plen*tl
-
-                        cT = 20 if xs > xn else 10
-                        tx, ty = tx-(yn-ys)/plen*cT, ty+(xn-xs)/plen*cT
-                        t = draw.Text(dname, 14, x = round(tx), y = round(ty), font_weight = dfont, 
-                                      text_anchor='middle', valign='center')
-                        tl = 2 * dlen
-                    else:
-                        tl -= plen
-
-                    # Finish the path if pathlength >= domainlength
-                    if np.isclose(dlen, plen) or plen > dlen:
-                        xn, yn = xs+(xn-xs)/plen*dlen, ys+(yn-ys)/plen*dlen
-                        p.L(round(xn), round(yn))
+                    xn, yn = detour[di]
+                    seglen = distance((xs, ys), (xn, yn))
+                    ux, uy = unitVec((xs, ys), (xn, yn), seglen)
+                    # Domain label
+                    if np.isclose(seglen, tlabel) or seglen > tlabel:
+                        tx, ty = xs + ux*tlabel, ys + uy*tlabel
+                        dt = dom_txt(dname, tx, ty, ux, uy)
+                    # Circle initialization
+                    cx, cy = xs + ux*off, ys + uy*off
+                    if a_gt_b(distance((xs, ys), (cx, cy)), seglen): # a >= b
+                        off = distance((xs, ys), (cx, cy)) - seglen
+                    # Finish the path if segment length >= remaining domain length
+                    if a_eq_b(rsdlen, seglen) or seglen > rsdlen:
+                        xn, yn = xs + ux*rsdlen, ys + uy*rsdlen
+                        # Draw domain
+                        if end == 'p5':
+                            p = draw_5prime(p, xs, ys, ux, uy)
+                            p.L(round(xn), round(yn))
+                            end = False
+                        elif end == 'p3':
+                            p.M(round(xs), round(ys))
+                            p = draw_3prime(p, xn, yn, ux, uy)
+                            end = False
+                        else:
+                            p.M(round(xs), round(ys))
+                            p.L(round(xn), round(yn))
+                        # Draw nucleotides
+                        for _ in range(dlen):
+                            #circles.append(nuc_circle(cx, cy, dcolor, ux, uy))
+                            circles.append(nuc_txt('N', cx, cy, ux, uy),)
+                            cx, cy = cx + ux*scale, cy + uy*scale
+                            if a_gt_b(distance((xs, ys), (cx, cy)), rsdlen): # a >= b
+                                off = scale/2
+                                break
+                        if a_eq_b(rsdlen, seglen):
+                            di+=1
                         xs, ys = xn, yn
                         break
-                    p.L(round(xn), round(yn))
-                    dlen -= plen
-                    ci += 1 
+                    # Draw domain
+                    if end == 'p5':
+                        p = draw_5prime(p, xs, ys, ux, uy)
+                        p.L(round(xn), round(yn))
+                        end = False
+                    else:
+                        p.M(round(xs), round(ys))
+                        p.L(round(xn), round(yn))
+                    # Draw nucleotides
+                    for _ in range(dlen):
+                        #circles.append(nuc_circle(cx, cy, dcolor, ux, uy))
+                        circles.append(nuc_txt('N', cx, cy, ux, uy))
+                        cx, cy = cx + ux*scale, cy + uy*scale
+                        if a_gt_b(distance((xs, ys), (cx, cy)), seglen): # a >= b
+                            off = distance((xs, ys), (cx, cy)) - seglen
+                            break
+                    rsdlen -= seglen
+                    tlabel -= seglen
+                    di += 1 
                     xs, ys = xn, yn
-                yield p, t
+                yield p, dt
+            yield circles
 

@@ -6,6 +6,8 @@ log = logging.getLogger(__name__)
 
 import numpy as np
 
+scale = 15 
+
 class DrawingModuleError(Exception):
     pass
 
@@ -23,6 +25,7 @@ def half_angle(a, b, fwd = False, rev = False):
     return (b-a)/2
 
 def get_coords(i1, ang, c = 1):
+    c *= scale
     assert ang == (ang % 360)
     x0, y0 = i1
     if ang <= 90:
@@ -100,7 +103,7 @@ class fourway_module:
         self.pair = pair
         assert len(pair) == 2
         assert len(pair[0]) == len(pair[1])
-        self.plength = scale * (len(pair[0])+1)
+        self.plength = scale * (len(pair[0]))
         self.pnameT = pair[0].name
         self.pnameB = pair[1].name
         assert pair[0].color == pair[1].color
@@ -112,7 +115,7 @@ class fourway_module:
         self.p43 = p43
 
         self.n1 = [dom.name for dom in t1] 
-        self.l1 = [scale * (dom.length+1) for dom in t1] 
+        self.l1 = [scale * (dom.length) for dom in t1] 
         self.k1 = sum(self.l1)
         self.c1 = [dom.color for dom in t1] 
         self.m1 = [None for dom in t1] 
@@ -121,16 +124,16 @@ class fourway_module:
             self.p15 = False
 
         self.n2 = [dom.name for dom in t2] 
-        self.l2 = [scale * (dom.length+1) for dom in t2] 
+        self.l2 = [scale * (dom.length) for dom in t2] 
         self.k2 = sum(self.l2)
         self.c2 = [dom.color for dom in t2] 
         self.m2 = [False for dom in t2] 
         if t2 and p23: 
-            self.m2[0] = 'p3' 
+            self.m2[-1] = 'p3' 
             self.p23 = False
 
         self.n3 = [dom.name for dom in t3] 
-        self.l3 = [scale * (dom.length+1) for dom in t3] 
+        self.l3 = [scale * (dom.length) for dom in t3] 
         self.k3 = sum(self.l3)
         self.c3 = [dom.color for dom in t3] 
         self.m3 = [None for dom in t3] 
@@ -139,12 +142,12 @@ class fourway_module:
             self.p35 = False
 
         self.n4 = [dom.name for dom in t4] 
-        self.l4 = [scale * (dom.length+1) for dom in t4] 
+        self.l4 = [scale * (dom.length) for dom in t4] 
         self.k4 = sum(self.l4)
         self.c4 = [dom.color for dom in t4] 
         self.m4 = [False for dom in t4] 
         if t4 and p43: 
-            self.m4[0] = 'p3' 
+            self.m4[-1] = 'p3' 
             self.p43 = False
         
 
@@ -200,9 +203,9 @@ class fourway_module:
         if self.i2 is None:
             self.i2 = get_coords(self.i1, self.angle, self.plength)
         if self.i3 is None:
-            self.i3 = get_coords(self.i2, agl(self.angle+270), 25)
+            self.i3 = get_coords(self.i2, agl(self.angle+270), 25/scale)
         if self.i4 is None:
-            self.i4 = get_coords(self.i1, agl(self.angle+270), 25)
+            self.i4 = get_coords(self.i1, agl(self.angle+270), 25/scale)
         if self.p2 is None:
             self.p2 = get_coords(self.i2, self.a2, self.k2)
         if self.p3 is None:
@@ -231,7 +234,7 @@ class hairpin_module:
         self.pair = pair
         assert len(pair) == 2
         assert len(pair[0]) == len(pair[1])
-        self.plength = scale * (len(pair[0])+1)
+        self.plength = scale * len(pair[0])
         self.pnameT = pair[0].name
         self.pnameB = pair[1].name
         assert pair[0].color == pair[1].color
@@ -242,7 +245,7 @@ class hairpin_module:
 
 
         self.n1 = [dom.name for dom in t1] 
-        self.l1 = [scale * (dom.length+1) for dom in t1] 
+        self.l1 = [scale * (dom.length) for dom in t1] 
         self.k1 = sum(self.l1)
         self.c1 = [dom.color for dom in t1] 
         self.m1 = [False for dom in t1] 
@@ -250,15 +253,15 @@ class hairpin_module:
             self.m1[0] = 'p5' 
             self.p15 = False
         self.n4 = [dom.name for dom in t4] 
-        self.l4 = [scale * (dom.length+1) for dom in t4] 
+        self.l4 = [scale * (dom.length) for dom in t4] 
         self.k4 = sum(self.l4)
         self.c4 = [dom.color for dom in t4] 
         self.m4 = [False for dom in t4] 
         if t4 and p43: 
-            self.m4[0] = 'p3' 
+            self.m4[-1] = 'p3' 
             self.p43 = False
         self.nh = [dom.name for dom in th] 
-        self.lh = [scale * (dom.length+1) for dom in th] 
+        self.lh = [scale * (dom.length) for dom in th] 
         self.ch = [dom.color for dom in th] 
         self.mh = [False for dom in th] 
 
@@ -294,9 +297,9 @@ class hairpin_module:
         if self.i2 is None:
             self.i2 = get_coords(self.i1, self.angle, self.plength)
         if self.i3 is None:
-            self.i3 = get_coords(self.i2, agl(self.angle+270), 25)
+            self.i3 = get_coords(self.i2, agl(self.angle+270), 25/scale)
         if self.i4 is None:
-            self.i4 = get_coords(self.i1, agl(self.angle+270), 25)
+            self.i4 = get_coords(self.i1, agl(self.angle+270), 25/scale)
         if self.p4 is None:
             self.p4 = get_coords(self.i4, self.a4, self.k4)
 

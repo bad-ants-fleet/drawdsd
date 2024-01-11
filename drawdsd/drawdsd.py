@@ -26,7 +26,7 @@ def get_default_plot_params(cplx):
         nlen, llen = [], 0
         for di, pair in enumerate(strand):
             if pair is None: # unpaired
-                llen += (stable[si][di].length+1)
+                llen += (stable[si][di].length)
             else: # pair
                 if pair > (si, di):
                     pair_angles.append(0)

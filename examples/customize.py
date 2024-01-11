@@ -11,9 +11,9 @@ kerneldrawings = {
         'pa': {0:90, 1: 90, 2:90}, #{0: 90}, #{3: 180},
             'll': {}, # {(0,1):20}
            },
-    'y': {'kernel': 'e16 = L0*( S0 a L0( b( + S1 c* ) ) a*( d*( S2 e ) f +  ) ) x ',
-        'pa': {3:-45}, #{0: 90}, #{3: 180},
-         'll': {(0,1): 15}
+    'y': {'kernel': 'e16 = x a x L0*( S0 a L0( b( + S1 c* ) ) a*( d*( S2 e ) f +  ) ) a y ',
+        'pa': {3:-90}, #{0: 90}, #{3: 180},
+          'll': {(0,1):2}#{(0,0): 14, (2,2):8}
          },
 
 
@@ -120,7 +120,7 @@ def main():
         ll[k][l] = v 
    
     # Third, get the SVG objects of the complex!
-    svgC, pa, ll = draw_complex(mycplx, pair_angles = pa, loop_lengths = ll)
+    svgC, pa, ll = draw_complex(mycplx, pair_angles = pa, loop_lengths = ll, scale = 1)
     
     # Last, draw the complex!
     svg = get_drawing(svgC)
