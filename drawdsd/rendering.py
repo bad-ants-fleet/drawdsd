@@ -190,15 +190,61 @@ def get_detour(p0, pN, dtarget):
     """ Return a sequence of points for a detour satisfying dtarget.
     """
     # Let's do a simple rectangle: M(x0, y0).L(x1, y1).L(x2, y2).L(xN, yN)
+
+    def dtriangle(p0, ux, uy, c, a):
+        assert 2*a >= c
+        h = 1/2 * np.sqrt(4 * a**2 - c**2)
+        p1 = p0[0] + ux*c, p0[1] + uy*c
+        ph = p0[0] + ux*c/2, p0[1] + uy*c/2
+        p2 = ph[0] - uy*h, ph[1] + ux*h
+        return p2, p1
+
+    def triarec(p0, ux, uy, dt, pts):
+        if pts <= 1:
+            yield (p0[0] + ux*dt, p0[1] + uy*dt)
+            return
+
+        # for 2 points => straight line
+        c = dt
+        a = c/2
+        
+        p1, p2 = dtriangle(p0, ux, uy, c, a)
+
+        # if points == 1: then c must be a!
+        (ux, uy) = unitVec(p0, p1)
+        for p in triarec(p0, ux, uy, a, pts/2):
+            yield p
+        (ux, uy) = unitVec(p1, p2)
+        for p in triarec(p1, ux, uy, a, pts/2):
+            yield p
+        return
+
     dist_0N = distance(p0, pN)
     ddetour = dtarget - dist_0N
     (ux, uy) = unitVec(p0, pN, dist_0N)
-    p1 = p0[0] - uy*ddetour/2, p0[1] + ux*ddetour/2
-    p2 = pN[0] - uy*ddetour/2, pN[1] + ux*ddetour/2
-    sidelen = distance(p0, p1)
-    assert np.isclose(sidelen, distance(p2, pN))
-    assert np.isclose(dtarget, dist_0N + 2*sidelen)
-    return p0, p1, p2, pN
+
+    points = 4
+    if points == 2:
+        c = ddetour/2
+        (ux, uy) = (-uy, ux) # rotate 90*
+        p1 = p0[0] + ux*c, p0[1] + uy*c
+        p2 = pN[0] + ux*c, pN[1] + uy*c
+        sidelen = distance(p0, p1)
+        assert np.isclose(sidelen, distance(p2, pN))
+        assert np.isclose(dtarget, dist_0N + 2*sidelen)
+        return p0, p1, p2, pN
+    elif points == 4:
+        psR = [p0]
+        (ux, uy) = (-uy, ux) # rotate -90*
+        for p in triarec(p0, ux, uy, ddetour/2, 4):
+            psR.append(p)
+
+        p3 = psR[-1][0] + uy*dist_0N, psR[-1][1] - ux*dist_0N
+        psL = [p3]
+        for p in triarec(p3, -ux, -uy, ddetour/2, 4):
+            psL.append(p)
+
+        return *psR, *psL
 
 #def draw_5prime(p, xs, ys, ux, uy):
 #    a = 1.5
@@ -288,8 +334,8 @@ def draw_tentacles(dns, dls, dcs, dzs, dos, dms):
         else: # not enough space, let's draw a rectangle!
             assert slength > linelen
             detour = get_detour((x0, y0), (x1, y1), slength)
-            #for p in detour:
-            #    yield [draw.Circle(*p, scale/3, stroke_width = 1, stroke = 'black', fill = 'black')]
+            for p in detour:
+                yield [draw.Circle(*p, scale/2, stroke_width = 1, stroke = 'black', fill = 'black')]
             circles = []
             (xs, ys), di = detour[0], 1
             off = scale/2
