@@ -69,8 +69,6 @@ def get_segments(ptable, loop_lengths):
         identity, seg, pos = None, [[], []], 0
         ll1, ll2, lli = 0, 0, 0
         p5, p3 = True, False
-    for k,v in segments.items():
-        print(k,v)
     return segments
 
 def get_raw_modules(ptable, stable, segments, pair_angles, scale):

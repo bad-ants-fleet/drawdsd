@@ -203,9 +203,9 @@ class fourway_module:
         if self.i2 is None:
             self.i2 = get_coords(self.i1, self.angle, self.plength)
         if self.i3 is None:
-            self.i3 = get_coords(self.i2, agl(self.angle+270), 25/scale)
+            self.i3 = get_coords(self.i2, agl(self.angle+270), 2.5)
         if self.i4 is None:
-            self.i4 = get_coords(self.i1, agl(self.angle+270), 25/scale)
+            self.i4 = get_coords(self.i1, agl(self.angle+270), 2.5)
         if self.p2 is None:
             self.p2 = get_coords(self.i2, self.a2, self.k2)
         if self.p3 is None:
@@ -297,9 +297,9 @@ class hairpin_module:
         if self.i2 is None:
             self.i2 = get_coords(self.i1, self.angle, self.plength)
         if self.i3 is None:
-            self.i3 = get_coords(self.i2, agl(self.angle+270), 25/scale)
+            self.i3 = get_coords(self.i2, agl(self.angle+270), 2.5)
         if self.i4 is None:
-            self.i4 = get_coords(self.i1, agl(self.angle+270), 25/scale)
+            self.i4 = get_coords(self.i1, agl(self.angle+270), 2.5)
         if self.p4 is None:
             self.p4 = get_coords(self.i4, self.a4, self.k4)
 

@@ -65,6 +65,8 @@ def estimate_dimensions(svgC):
                         miny = int(y)
             except KeyError:
                 pass
+            except ValueError:
+                pass
     dimx = maxx - minx
     dimy = maxy - miny
     return dimx, dimy, minx, miny
@@ -94,7 +96,8 @@ def draw_stem(i1, i2, i3, i4, p15, p23, p35, p43, color, angle, length, nameT, n
     dt1 = dom_txt(nameT, tx, ty, ux, uy)
     cx, cy = x1 + ux*scale/2, y1 + uy*scale/2
     for _ in range(length):
-        #circles.append(nuc_circle(cx, cy, color, ux, uy))
+        circles.append(h_bonds(cx, cy, ux, uy))
+        circles.append(nuc_circle(cx, cy, color, ux, uy))
         circles.append(nuc_txt('N', cx, cy, ux, uy))
         cx, cy = cx + ux*scale, cy + uy*scale
  
@@ -113,7 +116,8 @@ def draw_stem(i1, i2, i3, i4, p15, p23, p35, p43, color, angle, length, nameT, n
     dt2 = dom_txt(nameT, tx, ty, ux, uy)
     cx, cy = x3 + ux*scale/2, y3 + uy*scale/2
     for _ in range(length):
-        #circles.append(nuc_circle(cx, cy, color, ux, uy))
+        circles.append(h_bonds(cx, cy, ux, uy))
+        circles.append(nuc_circle(cx, cy, color, ux, uy))
         circles.append(nuc_txt('N', cx, cy, ux, uy))
         cx, cy = cx + ux*scale, cy + uy*scale
  
@@ -147,12 +151,23 @@ def dom_txt(dname, x, y, ux, uy):
                      dominant_baseline='middle',
                      text_anchor='middle')
 
-def nuc_circle(x, y, c, ux, uy, r = None):
-    #x = x + uy*scale/3
-    #y = y - ux*scale/3
+def h_bonds(x, y, ux, uy):
+    p = draw.Path(stroke = 'black',
+                  fill_opacity = 0, 
+                  stroke_width = 2)
+    x0 = x + uy * scale/2
+    y0 = y - ux * scale/2
+    xn = x + uy * scale*1.2
+    yn = y - ux * scale*1.2
+    p.M(round(x0), round(y0)).L(round(xn), round(yn))
+    return p
+
+def nuc_circle(x, y, c, ux, uy, r = None, off = scale/3):
+    x = x + uy*off
+    y = y - ux*off
     if r is None:
         r = scale/3
-    return draw.Circle(x, y, r, fill = c, stroke_width = 1, stroke = 'black')
+    return draw.Circle(x, y, r, fill = c, stroke_width = 0, stroke = 'black')
 
 def nuc_txt(char, x, y, ux, uy):
     x = x + uy*scale/3
@@ -164,8 +179,6 @@ def nuc_txt(char, x, y, ux, uy):
                      text_anchor='middle')
 
 def distance(p1, p2):
-    # (x1, y1) = p1
-    # (x2, y2) = p2
     return np.sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
 
 def unitVec(p1, p2, dist = None):
@@ -187,20 +200,32 @@ def get_detour(p0, pN, dtarget):
     assert np.isclose(dtarget, dist_0N + 2*sidelen)
     return p0, p1, p2, pN
 
+#def draw_5prime(p, xs, ys, ux, uy):
+#    a = 1.5
+#    b = 0.5
+#    c = (a+b)/2
+#    x50, y50 = xs  + ux*scale*a, ys + uy*scale*a
+#    x51, y51 = xs  + ux*scale*c, ys + uy*scale*c
+#    x52, y52 = x51 - uy*scale, y51  + ux*scale
+#    x53, y53 = xs  + ux*scale*b, ys + uy*scale*b
+#    return p.M(round(x50), round(y50)).Q(x52, y52, x53, y53)  # Draw a curve to (70, -20)
+
 def draw_5prime(p, xs, ys, ux, uy):
-    x50, y50 = xs  + ux*scale/1.5,   ys  + uy*scale/1.5
-    x51, y51 = x50 - uy*scale/2, y50 + ux*scale/2 
-    x52, y52 = x51 - ux*scale/4, y51 - uy*scale/4
-    x53, y53 = x52 + uy*scale/2, y52 - ux*scale/2
+    a, b, c = 1, 0.5, 0.5
+    x50, y50 = xs  + ux*scale*a, ys  + uy*scale*a
+    x51, y51 = x50 - uy*scale*b, y50 + ux*scale*b
+    x52, y52 = x51 - ux*scale*c, y51 - uy*scale*c
+    x53, y53 = x52 + uy*scale*b, y52 - ux*scale*b
     return p.M(round(x50), round(y50)).L(
                round(x51), round(y51)).L(
                round(x52), round(y52)).L(
                round(x53), round(y53))
 
 def draw_3prime(p, xn, yn, ux, uy):
-    x30, y30 = xn - ux*scale*1.5, yn - uy*scale*1.5
-    x31, y31 = x30 + ux*scale, y30 + uy*scale
-    x32, y32 = x30 - uy*scale, y30 + ux*scale
+    a, b, c = 1.5, 1, 1
+    x30, y30 = xn - ux*scale*a, yn - uy*scale*a
+    x31, y31 = x30 + ux*scale*b, y30 + uy*scale*b
+    x32, y32 = x30 - uy*scale*c, y30 + ux*scale*c
     return p.L(round(x30), round(y30)).L(
                round(x31), round(y31)).L(
                round(x32), round(y32))
@@ -238,6 +263,8 @@ def draw_tentacles(dns, dls, dcs, dzs, dos, dms):
                 xn, yn = xs + ux*sdlen, ys + uy*sdlen
                 if end == 'p5':
                     p = draw_5prime(p, xs, ys, ux, uy)
+                    #x5, y5 = xs  + ux*scale/1.5, ys + uy*scale/1.5
+                    #yield draw.Circle(x5, y5, scale/1.5, stroke_width = 0, fill = dcolor),
                     p.L(round(xn), round(yn))
                 elif end == 'p3':
                     p.M(round(xs), round(ys))
@@ -251,7 +278,7 @@ def draw_tentacles(dns, dls, dcs, dzs, dos, dms):
                 if dname:
                     cx, cy = xs + ux*scale/2, ys + uy*scale/2
                     for _ in range(dlen):
-                        #circles.append(nuc_circle(cx, cy, dcolor, ux, uy))
+                        circles.append(nuc_circle(cx, cy, dcolor, ux, uy))
                         circles.append(nuc_txt('N', cx, cy, ux, uy))
                         cx, cy = cx + ux*scale, cy + uy*scale
                 xs, ys = xn, yn
@@ -267,18 +294,18 @@ def draw_tentacles(dns, dls, dcs, dzs, dos, dms):
             (xs, ys), di = detour[0], 1
             off = scale/2
             for (dname, dlen, dcolor, end) in zip(ns, ls, cs, es):
-                print(dname, dlen, dcolor, end)
                 rsdlen = scale * dlen # remaining scaled domain length
-                tlabel = scale * dlen / 2
+                tlabel, tl = scale * dlen / 2, True
                 p = dom_path(dcolor)
                 while True:
                     xn, yn = detour[di]
                     seglen = distance((xs, ys), (xn, yn))
                     ux, uy = unitVec((xs, ys), (xn, yn), seglen)
                     # Domain label
-                    if np.isclose(seglen, tlabel) or seglen > tlabel:
+                    if tl and (np.isclose(seglen, tlabel) or seglen > tlabel):
                         tx, ty = xs + ux*tlabel, ys + uy*tlabel
                         dt = dom_txt(dname, tx, ty, ux, uy)
+                        tl = False
                     # Circle initialization
                     cx, cy = xs + ux*off, ys + uy*off
                     if a_gt_b(distance((xs, ys), (cx, cy)), seglen): # a >= b
@@ -300,7 +327,7 @@ def draw_tentacles(dns, dls, dcs, dzs, dos, dms):
                             p.L(round(xn), round(yn))
                         # Draw nucleotides
                         for _ in range(dlen):
-                            #circles.append(nuc_circle(cx, cy, dcolor, ux, uy))
+                            circles.append(nuc_circle(cx, cy, dcolor, ux, uy))
                             circles.append(nuc_txt('N', cx, cy, ux, uy),)
                             cx, cy = cx + ux*scale, cy + uy*scale
                             if a_gt_b(distance((xs, ys), (cx, cy)), rsdlen): # a >= b
@@ -320,14 +347,15 @@ def draw_tentacles(dns, dls, dcs, dzs, dos, dms):
                         p.L(round(xn), round(yn))
                     # Draw nucleotides
                     for _ in range(dlen):
-                        #circles.append(nuc_circle(cx, cy, dcolor, ux, uy))
+                        circles.append(nuc_circle(cx, cy, dcolor, ux, uy))
                         circles.append(nuc_txt('N', cx, cy, ux, uy))
                         cx, cy = cx + ux*scale, cy + uy*scale
                         if a_gt_b(distance((xs, ys), (cx, cy)), seglen): # a >= b
                             off = distance((xs, ys), (cx, cy)) - seglen
                             break
                     rsdlen -= seglen
-                    tlabel -= seglen
+                    if tl:
+                        tlabel -= seglen
                     di += 1 
                     xs, ys = xn, yn
                 yield p, dt
