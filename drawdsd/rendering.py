@@ -7,21 +7,317 @@ log = logging.getLogger(__name__)
 import numpy as np
 import drawsvg as draw
 from colorsys import hls_to_rgb
-from .components import scale
+from .components import scale, agl
+from scipy.optimize import fsolve
 
 
 dfont = 'bold' # TODO: need some interfacd for plotting parameters.
 ffamily = 'Courier'
 
+# Layout
+def dom_path(dcolor, sw = None, da = None):
+    if sw is None:
+        sw = 10 
+    return draw.Path(stroke = dcolor, 
+                     fill_opacity = 0, 
+                     stroke_width = sw, 
+                     stroke_dasharray = da,
+                     stroke_linejoin = "round")
+
+def dom_txt(dname, x, y, ux, uy):
+    x = x - uy*scale
+    y = y + ux*scale
+    return draw.Text(dname, 14, x = round(x), y = round(y), 
+                     font_family = ffamily,
+                     font_weight = dfont, 
+                     dominant_baseline='middle',
+                     text_anchor='middle')
+
+def h_bonds(x, y, ux, uy):
+    p = draw.Path(stroke = 'black',
+                  fill_opacity = 0, 
+                  stroke_width = 2)
+    x0 = x + uy * scale/2
+    y0 = y - ux * scale/2
+    xn = x + uy * scale*1.2
+    yn = y - ux * scale*1.2
+    p.M(round(x0), round(y0)).L(round(xn), round(yn))
+    return p
+
+def nuc_circle(x, y, c, ux, uy, off = scale/8):
+    x = x + uy*off
+    y = y - ux*off
+    return draw.Circle(x, y, scale/3, fill = c, stroke_width = 0, stroke = 'black')
+
+def nuc_txt(char, x, y, ux, uy, off = scale/8):
+    x = x + uy*off
+    y = y - ux*off
+    return draw.Text(char, round(scale*2/3), round(x), round(y), 
+                     font_family = ffamily,
+                     font_weight = dfont, 
+                     dominant_baseline='middle',
+                     text_anchor='middle')
+
+#def draw_5prime(p, xs, ys, ux, uy):
+#    a = 1.5
+#    b = 0.5
+#    c = (a+b)/2
+#    x50, y50 = xs  + ux*scale*a, ys + uy*scale*a
+#    x51, y51 = xs  + ux*scale*c, ys + uy*scale*c
+#    x52, y52 = x51 - uy*scale, y51  + ux*scale
+#    x53, y53 = xs  + ux*scale*b, ys + uy*scale*b
+#    return p.M(round(x50), round(y50)).Q(x52, y52, x53, y53)  # Draw a curve to (70, -20)
+
+def draw_5prime(p, xs, ys, ux, uy):
+    a, b, c = 1, 0.5, 0.5
+    x50, y50 = xs  + ux*scale*a, ys  + uy*scale*a
+    x51, y51 = x50 - uy*scale*b, y50 + ux*scale*b
+    x52, y52 = x51 - ux*scale*c, y51 - uy*scale*c
+    x53, y53 = x52 + uy*scale*b, y52 - ux*scale*b
+    return p.M(round(x50), round(y50)).L(
+               round(x51), round(y51)).L(
+               round(x52), round(y52)).L(
+               round(x53), round(y53))
+
+def draw_3prime(p, xn, yn, ux, uy):
+    a, b, c = 1.5, 1, 1
+    rx, ry = vec_rot(ux, uy, 180)
+    x30, y30 = xn + rx*scale*a, yn + ry*scale*a
+    x31, y31 = x30 + ux*scale*b, y30 + uy*scale*b
+    rx, ry = vec_rot(ux, uy, 90)
+    x32, y32 = x30 + rx*scale*c, y30 + ry*scale*c
+    return p.L(round(x30), round(y30)).L(
+               round(x31), round(y31)).L(
+               round(x32), round(y32))
+
+def get_radius_2(s, c, points):
+    def frad(x): # minor arc
+        (r, a) = x
+        return [s/points - (2 * r * np.sin((a/points)/(2*r))),
+                np.sin(a/(2*r)) - c/(2*r)]
+    # Initial guess: assume a+c = U
+    [r, a] = fsolve(frad, [(s+c)/(2*np.pi), s])
+    assert 2*r > c
+    if r*np.pi > a: # minor
+        phi = agl(np.rad2deg(a/r))
+        psi = phi
+        off = -(180-phi)/2
+    else: # mayor
+        phi = 360 - agl(np.rad2deg(a/r))
+        psi = 360 - phi
+        off = (180-phi)/2
+    return r, phi, psi, off
+
+
+def get_radius(a, c):
+    assert a > c
+    def frad(r): # minor arc
+        return np.sin(a/(2*r)) - c/(2*r)
+    # Initial guess: assume a+c = U
+    [r] = fsolve(frad, (a+c)/(2*np.pi))
+    assert 2*r > c
+
+    if r*np.pi > a: # minor
+        phi = agl(np.rad2deg(a/r))
+        psi = phi
+        off = -(180-phi)/2
+    else: # mayor
+        phi = 360 - agl(np.rad2deg(a/r))
+        psi = 360 - phi
+        off = (180-phi)/2
+    return r, phi, psi, off
+
+#def get_offset(detour, dist_0N):
+#    # The angle assuming a full circle
+#    ang = 180 - 360/((detour + dist_0N)/scale)
+#    print(f'{ang=}')
+#    mang = ((180 - ang)*dist_0N/scale)
+#    print(f'{mang=}')
+#    return 180 - mang
+
+def get_detour_circ(p0, pN, dtarget):
+    dist_0N = distance(p0, pN) # chordlength
+    pts = [p0]
+    apN = True
+    if a_gt_b((dtarget - 2*scale), dist_0N):
+        # Chop two points and put them separately
+        tux, tuy = unitvec(p0, pN, dist_0N)
+        rux, ruy = vec_rot(tux, tuy, 90)
+        pl0 = end_point(p0, (rux, ruy), scale)
+        plN = end_point(pN, (rux, ruy), scale)
+        ddetour = dtarget - 2*scale
+        pts.append(pl0)
+    else:
+        pl0 = p0
+        plN = pN
+        ddetour = dtarget
+        apN = False
+
+    print('--')
+    c = dist_0N # cordlength
+    a = ddetour  # arclength
+    points = round(a/scale-0.5)
+    print(f'{c = }, {a = }')
+
+    assert not a_eq_b(a, c)
+
+    r, phi, psi, off = get_radius(a, c)
+    print(f'{r=} {phi=} {psi=} {off=}')
+    assert a_eq_b(np.deg2rad(psi)*r, a)
+    r, phi, psi, off = get_radius_2(a, c, points)
+    print(np.deg2rad(psi)*r, a)
+    print(f'{r=} {phi=} {psi=} {off=}')
+
+    # The center calculated from p0
+    tux, tuy = unitvec(pl0, plN)
+    rux, ruy = vec_rot(tux, tuy, off)
+    cc = (end_point(pl0, (rux, ruy),  r))
+
+    # The center calculated from pN
+    tux, tuy = unitvec(plN, pl0)
+    rux, ruy = vec_rot(tux, tuy, -off)
+    cc2 = (end_point(plN, (rux, ruy),  r))
+    assert np.allclose(cc, cc2)
+
+    sa = a / points
+    sc = 2*r*np.sin(sa/(2*r))
+    print(sa, sc, points*sc, a)
+
+    ang = psi/points
+    for _ in range(points):
+        #if _ == 0:
+        #    tux, tuy = unitvec(pl1, cc1)
+        #    rux, ruy = vec_rot(tux, tuy, ang)
+        #    pts.append(end_point(pts[-1], (rux, ruy),  a))
+        #else:
+        tux, tuy = unitvec(cc, pts[-1])
+        rux, ruy = vec_rot(tux, tuy, -ang)
+        pts.append(end_point(cc, (rux, ruy),  r))
+    if apN:
+        pts.append(pN)
+    return pts#(*cc1, r), (*cc2, r)
+
+
+    ## Target segment length
+    ##print(f'{ddetour = } {points = }')
+    #a = ddetour/points
+    ##print(f'a {a=}')
+    ##tphi = a/r
+    ##print(f' {tphi=}')
+    ##a = abs(2*r*np.sin(tphi/2))
+    ##print(f'b {a=}')
+    #print(distance(p0, pN))
+    #print(distance(pl1, plN))
+    #print(distance(pl1, pts[-1]), distance(pl1, plN))
+    #print(distance(plN, pts[-1]), distance(plN, plN))
+    #if True:
+    #    #print(pl1)
+    #    #print(pts[-1])
+    #    #print(plN)
+    #    # Center piece
+    #    tux, tuy = unitvec(pts[-1], pts[-2])
+    #    rux, ruy = vec_rot(tux, tuy, ang/2 + 90)
+    #    pts.append(end_point(pts[-1], (rux, ruy),  dist_0N))
+    #    # Second half 
+    #    for _ in range(points):
+    #        if _ == 0:
+    #            tux, tuy = unitvec(pts[-1], pts[-2])
+    #            rux, ruy = vec_rot(tux, tuy, 90+ang/2)
+    #            pts.append(end_point(pts[-1], (rux, ruy),  a))
+    #        else:
+    #            tux, tuy = unitvec(pts[-1], pts[-2])
+    #            rux, ruy = vec_rot(tux, tuy, ang)
+    #            pts.append(end_point(pts[-1], (rux, ruy),  a))
+    #else:
+
+    return (0,0)
+
+
+def get_detour(p0, pN, dtarget, circ = False):
+    dist_0N = distance(p0, pN)
+    
+    pts = [p0]
+    apN = True
+    if a_ge_b((dtarget - 2*scale), dist_0N):
+        # Chop two points and put them separately
+        tux, tuy = unitvec(p0, pN, dist_0N)
+        rux, ruy = vec_rot(tux, tuy, 90)
+        pl1 = end_point(p0, (rux, ruy), scale)
+        plN = end_point(pN, (rux, ruy), scale)
+        ddetour = dtarget - 2*scale - dist_0N
+        pts.append(pl1)
+    else:
+        pl1 = p0
+        plN = pN
+        ddetour = dtarget - dist_0N
+        apN = False
+
+    points = round(ddetour/scale/2-0.5) if circ else 1
+    a = ddetour/2/points
+    ang = 180 - (360/(points*2))
+    for _ in range(points):
+        if _ == 0:
+            tux, tuy = unitvec(pts[-1], plN)
+            rux, ruy = vec_rot(tux, tuy, 90+ang/2)
+            pts.append(end_point(pts[-1], (rux, ruy),  a))
+        else:
+            tux, tuy = unitvec(pts[-1], pts[-2])
+            rux, ruy = vec_rot(tux, tuy, ang)
+            pts.append(end_point(pts[-1], (rux, ruy),  a))
+    # Center piece
+    tux, tuy = unitvec(pts[-1], pts[-2])
+    rux, ruy = vec_rot(tux, tuy, ang/2 + 90)
+    pts.append(end_point(pts[-1], (rux, ruy),  dist_0N))
+    # Second half 
+    for _ in range(points):
+        if _ == 0:
+            tux, tuy = unitvec(pts[-1], pts[-2])
+            rux, ruy = vec_rot(tux, tuy, 90+ang/2)
+            pts.append(end_point(pts[-1], (rux, ruy),  a))
+        else:
+            tux, tuy = unitvec(pts[-1], pts[-2])
+            rux, ruy = vec_rot(tux, tuy, ang)
+            pts.append(end_point(pts[-1], (rux, ruy),  a))
+    if apN:
+        pts.append(pN)
+    return pts
+
+# Helpers
 def a_lt_b(a, b):
     return a < b and not np.isclose(a, b)
 
-def a_eq_b(a, b):
-    return np.isclose(a, b)
+def a_eq_b(a, b, eps=1e-5):
+    return np.isclose(a, b, rtol=eps)
 
 def a_gt_b(a, b):
     return a > b and not np.isclose(a, b)
 
+def a_ge_b(a, b):
+    return a > b or np.isclose(a, b)
+
+
+def distance(p1, p2):
+    """Returns distance between two points."""
+    return np.sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
+
+def unitvec(p1, p2, dist = None):
+    """Returns unit vector from p1 to p2."""
+    if dist is None:
+        dist = distance(p1, p2) 
+    return (p2[0]-p1[0])/dist, (p2[1]-p1[1])/dist
+
+def vec_rot(x, y, alpha):
+    """Rotates vector by angle alpha. """
+    alpha = np.radians(alpha)
+    rx = x * np.cos(alpha) - y * np.sin(alpha)
+    ry = x * np.sin(alpha) + y * np.cos(alpha)
+    return rx, ry
+
+def end_point(p0, v, l):
+    """Returns the end point given p0 vector. """
+    return p0[0] + v[0]*l, p0[1] + v[1]*l
+
+# Interface 
 def get_drawing(svgC):
     # Initialize the SVG image & background
     dimx, dimy, minx, miny = estimate_dimensions(svgC)
@@ -92,7 +388,7 @@ def draw_stem(i1, i2, i3, i4, p15, p23, p35, p43, color, angle, length, nameT, n
               round(x4), round(y4))
 
     tx, ty = (x1+x2)/2, (y1+y2)/2 
-    ux, uy = unitVec((x1, y1), (x2, y2))
+    ux, uy = unitvec((x1, y1), (x2, y2))
     dt1 = dom_txt(nameT, tx, ty, ux, uy)
     cx, cy = x1 + ux*scale/2, y1 + uy*scale/2
     for _ in range(length):
@@ -112,8 +408,8 @@ def draw_stem(i1, i2, i3, i4, p15, p23, p35, p43, color, angle, length, nameT, n
         dompath.L(round(x2), round(y2))
 
     tx, ty = (x3+x4)/2, (y3+y4)/2 
-    ux, uy = unitVec((x3, y3), (x4, y4))
-    dt2 = dom_txt(nameT, tx, ty, ux, uy)
+    ux, uy = unitvec((x3, y3), (x4, y4))
+    dt2 = dom_txt(nameB, tx, ty, ux, uy)
     cx, cy = x3 + ux*scale/2, y3 + uy*scale/2
     for _ in range(length):
         circles.append(h_bonds(cx, cy, ux, uy))
@@ -133,159 +429,23 @@ def draw_stem(i1, i2, i3, i4, p15, p23, p35, p43, color, angle, length, nameT, n
 
     return bground, dompath, dt1, dt2, *circles
 
-def dom_path(dcolor, sw = None, da = None):
-    if sw is None:
-        sw = 10
-    return draw.Path(stroke = dcolor, 
-                     fill_opacity = 0, 
-                     stroke_width = sw, 
-                     stroke_dasharray = da,
-                     stroke_linejoin = "round")
-
-def dom_txt(dname, x, y, ux, uy):
-    x = x - uy*scale
-    y = y + ux*scale
-    return draw.Text(dname, round(scale), x = round(x), y = round(y), 
-                     font_family = ffamily,
-                     font_weight = dfont, 
-                     dominant_baseline='middle',
-                     text_anchor='middle')
-
-def h_bonds(x, y, ux, uy):
-    p = draw.Path(stroke = 'black',
-                  fill_opacity = 0, 
-                  stroke_width = 2)
-    x0 = x + uy * scale/2
-    y0 = y - ux * scale/2
-    xn = x + uy * scale*1.2
-    yn = y - ux * scale*1.2
-    p.M(round(x0), round(y0)).L(round(xn), round(yn))
-    return p
-
-def nuc_circle(x, y, c, ux, uy, r = None, off = scale/3):
-    x = x + uy*off
-    y = y - ux*off
-    if r is None:
-        r = scale/3
-    return draw.Circle(x, y, r, fill = c, stroke_width = 0, stroke = 'black')
-
-def nuc_txt(char, x, y, ux, uy):
-    x = x + uy*scale/3
-    y = y - ux*scale/3
-    return draw.Text(char, round(scale*2/3), round(x), round(y), 
-                     font_family = ffamily,
-                     font_weight = dfont, 
-                     dominant_baseline='middle',
-                     text_anchor='middle')
-
-def distance(p1, p2):
-    return np.sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
-
-def unitVec(p1, p2, dist = None):
-    if dist is None:
-        dist = distance(p1, p2) 
-    return (p2[0]-p1[0])/dist, (p2[1]-p1[1])/dist
-
-def get_detour(p0, pN, dtarget):
-    """ Return a sequence of points for a detour satisfying dtarget.
-    """
-    # Let's do a simple rectangle: M(x0, y0).L(x1, y1).L(x2, y2).L(xN, yN)
-
-    def dtriangle(p0, ux, uy, c, a):
-        assert 2*a >= c
-        h = 1/2 * np.sqrt(4 * a**2 - c**2)
-        p1 = p0[0] + ux*c, p0[1] + uy*c
-        ph = p0[0] + ux*c/2, p0[1] + uy*c/2
-        p2 = ph[0] - uy*h, ph[1] + ux*h
-        return p2, p1
-
-    def triarec(p0, ux, uy, dt, pts):
-        if pts <= 1:
-            yield (p0[0] + ux*dt, p0[1] + uy*dt)
-            return
-
-        # for 2 points => straight line
-        c = dt
-        a = c/2
-        
-        p1, p2 = dtriangle(p0, ux, uy, c, a)
-
-        # if points == 1: then c must be a!
-        (ux, uy) = unitVec(p0, p1)
-        for p in triarec(p0, ux, uy, a, pts/2):
-            yield p
-        (ux, uy) = unitVec(p1, p2)
-        for p in triarec(p1, ux, uy, a, pts/2):
-            yield p
-        return
-
-    dist_0N = distance(p0, pN)
-    ddetour = dtarget - dist_0N
-    (ux, uy) = unitVec(p0, pN, dist_0N)
-
-    points = 4
-    if points == 2:
-        c = ddetour/2
-        (ux, uy) = (-uy, ux) # rotate 90*
-        p1 = p0[0] + ux*c, p0[1] + uy*c
-        p2 = pN[0] + ux*c, pN[1] + uy*c
-        sidelen = distance(p0, p1)
-        assert np.isclose(sidelen, distance(p2, pN))
-        assert np.isclose(dtarget, dist_0N + 2*sidelen)
-        return p0, p1, p2, pN
-    elif points == 4:
-        psR = [p0]
-        (ux, uy) = (-uy, ux) # rotate -90*
-        for p in triarec(p0, ux, uy, ddetour/2, 4):
-            psR.append(p)
-
-        p3 = psR[-1][0] + uy*dist_0N, psR[-1][1] - ux*dist_0N
-        psL = [p3]
-        for p in triarec(p3, -ux, -uy, ddetour/2, 4):
-            psL.append(p)
-
-        return *psR, *psL
-
-#def draw_5prime(p, xs, ys, ux, uy):
-#    a = 1.5
-#    b = 0.5
-#    c = (a+b)/2
-#    x50, y50 = xs  + ux*scale*a, ys + uy*scale*a
-#    x51, y51 = xs  + ux*scale*c, ys + uy*scale*c
-#    x52, y52 = x51 - uy*scale, y51  + ux*scale
-#    x53, y53 = xs  + ux*scale*b, ys + uy*scale*b
-#    return p.M(round(x50), round(y50)).Q(x52, y52, x53, y53)  # Draw a curve to (70, -20)
-
-def draw_5prime(p, xs, ys, ux, uy):
-    a, b, c = 1, 0.5, 0.5
-    x50, y50 = xs  + ux*scale*a, ys  + uy*scale*a
-    x51, y51 = x50 - uy*scale*b, y50 + ux*scale*b
-    x52, y52 = x51 - ux*scale*c, y51 - uy*scale*c
-    x53, y53 = x52 + uy*scale*b, y52 - ux*scale*b
-    return p.M(round(x50), round(y50)).L(
-               round(x51), round(y51)).L(
-               round(x52), round(y52)).L(
-               round(x53), round(y53))
-
-def draw_3prime(p, xn, yn, ux, uy):
-    a, b, c = 1.5, 1, 1
-    x30, y30 = xn - ux*scale*a, yn - uy*scale*a
-    x31, y31 = x30 + ux*scale*b, y30 + uy*scale*b
-    x32, y32 = x30 - uy*scale*c, y30 + ux*scale*c
-    return p.L(round(x30), round(y30)).L(
-               round(x31), round(y31)).L(
-               round(x32), round(y32))
-
 def draw_tentacles(dns, dls, dcs, dzs, dos, dms):
     """
     """
-
     # names, lengths, colors, startpoint, endpoint
     for ns, ls, cs, (x0, y0), (x1, y1), es in zip(dns, dls, dcs, dzs, dos, dms):
         slength = scale * sum(ls) # total length of concatenated backbones
         linelen = distance((x0, y0), (x1, y1))
         if a_eq_b(linelen, 0):
             continue # Necessary 
+        #yield draw.Circle(0, 0, 285.14, stroke_width = 1, fill = None),
+        #yield draw.Circle(0, 0, 2, stroke_width = 1, fill = 'white'),
+        #tp = draw.Path(stroke='white')
+        #tp0 = (0, 0)
+        #tp1 = (0, 285.15)
+        #tp2 = vec_rot(*tp1, 80.374)
+        #tp.M(*tp1).L(*tp0).L(*tp2)
+        #yield tp,
 
         # Append a fake domain if the distance between points is 
         # longer than the length of all domains.
@@ -298,7 +458,7 @@ def draw_tentacles(dns, dls, dcs, dzs, dos, dms):
             assert a_eq_b(slength, linelen)
 
         if a_eq_b(slength, linelen):
-            ux, uy = unitVec((x0, y0), (x1, y1), linelen)
+            ux, uy = unitvec((x0, y0), (x1, y1), linelen)
             xs, ys = x0, y0 # start coordinates
             circles = []
             for (dname, dlen, dcolor, end) in zip(ns, ls, cs, es):
@@ -333,9 +493,14 @@ def draw_tentacles(dns, dls, dcs, dzs, dos, dms):
 
         else: # not enough space, let's draw a rectangle!
             assert slength > linelen
-            detour = get_detour((x0, y0), (x1, y1), slength)
-            for p in detour:
-                yield [draw.Circle(*p, scale/2, stroke_width = 1, stroke = 'black', fill = 'black')]
+            detour = get_detour_circ((x0, y0), (x1, y1), slength)
+            #cp1, cp2 = get_detour_circ((x0, y0), (x1, y1), slength)
+            #yield [draw.Circle(*cp1, stroke_width = 1, fill = 'black')]
+            #yield [draw.Circle(*cp2, stroke_width = 1, fill = 'white')]
+            #yield [draw.Circle(x0, y0, 5, stroke_width = 1, fill = 'black')]
+            #yield [draw.Circle(x1, y1, 5, stroke_width = 1, fill = 'black')]
+
+            #    yield [draw.Circle(*p, scale/2, stroke_width = 1, stroke = 'black', fill = 'black')]
             circles = []
             (xs, ys), di = detour[0], 1
             off = scale/2
@@ -343,10 +508,11 @@ def draw_tentacles(dns, dls, dcs, dzs, dos, dms):
                 rsdlen = scale * dlen # remaining scaled domain length
                 tlabel, tl = scale * dlen / 2, True
                 p = dom_path(dcolor)
+                p.M(round(xs), round(ys))
                 while True:
                     xn, yn = detour[di]
                     seglen = distance((xs, ys), (xn, yn))
-                    ux, uy = unitVec((xs, ys), (xn, yn), seglen)
+                    ux, uy = unitvec((xs, ys), (xn, yn), seglen)
                     # Domain label
                     if tl and (np.isclose(seglen, tlabel) or seglen > tlabel):
                         tx, ty = xs + ux*tlabel, ys + uy*tlabel
@@ -369,7 +535,7 @@ def draw_tentacles(dns, dls, dcs, dzs, dos, dms):
                             p = draw_3prime(p, xn, yn, ux, uy)
                             end = False
                         else:
-                            p.M(round(xs), round(ys))
+                            p.L(round(xs), round(ys))
                             p.L(round(xn), round(yn))
                         # Draw nucleotides
                         for _ in range(dlen):
@@ -389,7 +555,7 @@ def draw_tentacles(dns, dls, dcs, dzs, dos, dms):
                         p.L(round(xn), round(yn))
                         end = False
                     else:
-                        p.M(round(xs), round(ys))
+                        p.L(round(xs), round(ys))
                         p.L(round(xn), round(yn))
                     # Draw nucleotides
                     for _ in range(dlen):

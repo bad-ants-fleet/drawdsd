@@ -12,8 +12,8 @@ kerneldrawings = {
             'll': {}, # {(0,1):20}
            },
     'y': {'kernel': 'e16 = x a x L0*( S0 a L0( b( + S1 c* ) ) a*( d*( S2 e ) f +  ) ) a y ',
-          'pa': {0:10, 1:10, 3:-90}, #{0: 90}, #{3: 180},
-          'll': {(0,1):2.5}#{(0,0): 14, (2,2):8}
+        'pa': {0:0, 1:0, 3:-90, 2:40}, #{0: 90}, #{3: 180},
+          'll': {(0,1):20, (2,2):None}#{(0,0): 14, (2,2):8}
          },
 
 
@@ -127,7 +127,7 @@ def main():
     #svg.append(draw.Text(f'{mycplx.name}:', 14, x = -25, y = 0, 
     #                     font_weight = 'bold', text_anchor='middle', valign='center'))
     svg.save_png(f'complex_{mycplx.name}.png')
-    svg.save_svg(f'complex_{mycplx.name}.svg')
+    #svg.save_svg(f'complex_{mycplx.name}.svg')
 
 
 if __name__ == '__main__':

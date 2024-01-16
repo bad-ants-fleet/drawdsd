@@ -6,7 +6,7 @@ log = logging.getLogger(__name__)
 
 import numpy as np
 
-scale = 15 
+scale = 16 
 
 class DrawingModuleError(Exception):
     pass
