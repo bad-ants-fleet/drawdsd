@@ -1,19 +1,21 @@
 #!/usr/bin/env python
 
+import random
 import drawsvg as draw
 from dsdobjects.objectio import set_io_objects, read_pil, read_pil_line
+from dsdobjects.iupac_utils import reverse_wc_complement
 from drawdsd import draw_complex, get_default_plot_params
 from drawdsd.rendering import get_drawing, get_rgb_palette
 
 # A few examples.
 kerneldrawings = {
     'x': {'kernel': 'E14 = L0* S0 a( L0( b( S1 c* ) ) ) d*( S2 e ) a',
-        'pa': {0:90, 1: 90, 2:90}, #{0: 90}, #{3: 180},
+            'pa': {0:90, 1: 90, 2:90}, #{0: 90}, #{3: 180},
             'll': {}, # {(0,1):20}
            },
     'y': {'kernel': 'e16 = x a x L0*( S0 a L0( b( + S1 c* ) ) a*( d*( S2 e ) f +  ) ) a y ',
-        'pa': {0:0, 1:0, 3:-90, 2:40}, #{0: 90}, #{3: 180},
-          'll': {(0,1):20, (2,2):None}#{(0,0): 14, (2,2):8}
+          'pa': {3:-90, 1:-30},#{0:10, 1:10, 3:-90, 2:40}, #{0: 90}, #{3: 180},
+          'll': {(0,1):10}#{(0,1):19, (2,2):None}#{(0,0): 14, (2,2):8}
          },
 
 
@@ -69,12 +71,12 @@ def main():
              length L0 = 15
              length S0 = 15
              length S1 = 15
-             length S2 = 15
+             length S2 = 5
              length a = 10 
              length b = 10
              length c = 10
              length d = 10
-             length e = 10
+             length e = 1
              length f = 10
              length g = 15
              length h = 15
@@ -102,6 +104,13 @@ def main():
         col = palette.pop(0)
         dom.color = f'rgb{col}'
         (~dom).color = f'rgb{col}'
+        if dom.sequence:
+            continue
+        dom.sequence = ''.join([random.choice('ACGT') for _ in range(len(dom))])
+        (~dom).sequence = reverse_wc_complement(dom.sequence, material = 'DNA')
+        #print(dom, dom.sequence)
+
+
             
     #
     # Customization 2 & 3: Let's choose "pair angles" and "loop lengths".
@@ -120,14 +129,14 @@ def main():
         ll[k][l] = v 
    
     # Third, get the SVG objects of the complex!
-    svgC, pa, ll = draw_complex(mycplx, pair_angles = pa, loop_lengths = ll, scale = 1)
+    svgC, pa, ll = draw_complex(mycplx, pair_angles = pa, loop_lengths = ll)
     
     # Last, draw the complex!
     svg = get_drawing(svgC)
     #svg.append(draw.Text(f'{mycplx.name}:', 14, x = -25, y = 0, 
     #                     font_weight = 'bold', text_anchor='middle', valign='center'))
     svg.save_png(f'complex_{mycplx.name}.png')
-    #svg.save_svg(f'complex_{mycplx.name}.svg')
+    svg.save_svg(f'complex_{mycplx.name}.svg')
 
 
 if __name__ == '__main__':

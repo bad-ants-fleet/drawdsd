@@ -71,7 +71,7 @@ def get_segments(ptable, loop_lengths):
         p5, p3 = True, False
     return segments
 
-def get_raw_modules(ptable, stable, segments, pair_angles, scale):
+def get_raw_modules(ptable, stable, segments, pair_angles):
     modules, metadata = [], []
     # We start at 5' end, so the modules must be in order!
     for si, strand in enumerate(ptable):
@@ -90,22 +90,22 @@ def get_raw_modules(ptable, stable, segments, pair_angles, scale):
             # Check if it is a hairpin!
             if sg1[1] and sg2[0] == [] and sg1[1][-1] == [sj, dj-1]:
                 th = [stable[i][j] for (i, j) in sg1[1]]
-                m = hairpin_module(stem, t1, t4, th, p15, p43, scale = scale)
+                m = hairpin_module(stem, t1, t4, th, p15, p43)
                 # Provide the loop_length data
-                if k1: m.k1 = scale * k1
-                if k4: m.k4 = scale * k4
+                if k1: m.k1 = k1
+                if k4: m.k4 = k4
                 # We pretend it has four ends to save some code later.
                 meta = [[*sg1[0], [si, di], *sg1[1]], 
                         [[sj, dj], *sg2[1]]]
             else:
                 t2 = [stable[i][j] for (i, j) in sg1[1]]
                 t3 = [stable[i][j] for (i, j) in sg2[0]]
-                m = fourway_module(stem, t1, t2, t3, t4, p15, p23, p35, p43, scale = scale)
+                m = fourway_module(stem, t1, t2, t3, t4, p15, p23, p35, p43)
                 # Provide the loop_length data
-                if k1: m.k1 = scale * k1
-                if k2: m.k2 = scale * k2
-                if k3: m.k3 = scale * k3
-                if k4: m.k4 = scale * k4
+                if k1: m.k1 = k1
+                if k2: m.k2 = k2
+                if k3: m.k3 = k3
+                if k4: m.k4 = k4
                 meta = [[*sg1[0], [si, di], *sg1[1]], 
                         [*sg2[0], [sj, dj], *sg2[1]]]
             # Provide the pair_angle data
@@ -114,7 +114,7 @@ def get_raw_modules(ptable, stable, segments, pair_angles, scale):
             metadata.append(meta)
     return modules, metadata
 
-def get_final_modules(cplx, pair_angles, loop_lengths, origin = (0, 0), scale = 10):
+def get_final_modules(cplx, pair_angles, loop_lengths, origin = (0, 0)):
     stable = list(cplx.strand_table)
     ptable = list(cplx.pair_table)
 
@@ -122,7 +122,7 @@ def get_final_modules(cplx, pair_angles, loop_lengths, origin = (0, 0), scale = 
     segments = get_segments(ptable, loop_lengths)
 
     # Returns all modules but has no knowledge on their neighborhood.
-    modules, metadata = get_raw_modules(ptable, stable, segments, pair_angles, scale)
+    modules, metadata = get_raw_modules(ptable, stable, segments, pair_angles)
 
     # Now set all the small angles
     def helper_21(m, n):
@@ -200,7 +200,7 @@ def get_final_modules(cplx, pair_angles, loop_lengths, origin = (0, 0), scale = 
     return modules
 
 def draw_complex(cplx, pair_angles = None, loop_lengths = None, 
-                 origin = (0, 0), scale = 10):
+                 origin = (0, 0)):
     """Returns the SVG image of a complex.
 
     The colors of domains have to be specified as property of the Domain
@@ -230,7 +230,7 @@ def draw_complex(cplx, pair_angles = None, loop_lengths = None,
         loop_lengths = ll
 
     modules = get_final_modules(cplx, pair_angles, loop_lengths, 
-                                origin = origin, scale = scale)
+                                origin = origin)
     objects = []
     for m in modules:
         objects.extend(draw_stem(*m.stem_data()))
