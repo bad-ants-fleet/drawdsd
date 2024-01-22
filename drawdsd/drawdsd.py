@@ -4,7 +4,6 @@
 import logging
 log = logging.getLogger(__name__)
 
-from dsdobjects.objectio import set_io_objects, clear_io_objects, read_pil, read_pil_line
 from itertools import combinations
 
 from .rendering import get_drawing, get_rgb_palette, draw_stem, draw_tentacles
@@ -36,10 +35,11 @@ def get_default_plot_params(cplx):
         loop_lengths.append(nlen)
     return pair_angles, loop_lengths
 
+#TODO: change 5' and 3' to be part of segments. 
 def get_segments(ptable, loop_lengths):
     """Helper function to decompose a pair table into segments.
 
-    Segments[(pair, pair)] = ([segment1, segment2], (ll1, ll2))
+    Segments[(pair, pair)] = ([segment1, segment2], (ll1, ll2), (5' end, 3' end)),
 
     """
     segments = {}
@@ -72,8 +72,11 @@ def get_segments(ptable, loop_lengths):
     return segments
 
 def get_raw_modules(ptable, stable, segments, pair_angles):
+    """Initialize the 4-way and the hairpin module.
+    """
     modules, metadata = [], []
     # We start at 5' end, so the modules must be in order!
+    pa = 0
     for si, strand in enumerate(ptable):
         for di, pair in enumerate(strand):
             if pair is None or (si, di) > pair:
@@ -93,10 +96,12 @@ def get_raw_modules(ptable, stable, segments, pair_angles):
                 m = hairpin_module(stem, t1, t4, th, p15, p43)
                 # Provide the loop_length data
                 if k1: m.k1 = k1
+                if k2: m.kh = k2 # TODO: not working yet
+                assert not k3
                 if k4: m.k4 = k4
                 # We pretend it has four ends to save some code later.
                 meta = [[*sg1[0], [si, di], *sg1[1]], 
-                        [[sj, dj], *sg2[1]]]
+                        [         [sj, dj], *sg2[1]]]
             else:
                 t2 = [stable[i][j] for (i, j) in sg1[1]]
                 t3 = [stable[i][j] for (i, j) in sg2[0]]
@@ -109,7 +114,8 @@ def get_raw_modules(ptable, stable, segments, pair_angles):
                 meta = [[*sg1[0], [si, di], *sg1[1]], 
                         [*sg2[0], [sj, dj], *sg2[1]]]
             # Provide the pair_angle data
-            m.angle = pair_angles.pop(0)
+            m.angle = -pair_angles[pa]
+            pa += 1 
             modules.append(m)
             metadata.append(meta)
     return modules, metadata
@@ -155,6 +161,7 @@ def get_final_modules(cplx, pair_angles, loop_lengths, origin = (0, 0)):
         m.mp4 = (n, 'p3')
         n.mp3 = (m, 'p4')
 
+    # Set the angles for all loop regions connecting stems.
     for (m, md), (n, nd) in combinations(zip(modules, metadata), 2):
         # Get all tentacle ends.
         mt1, mt2 = md[0][0], md[0][-1] # first and last
@@ -200,7 +207,7 @@ def get_final_modules(cplx, pair_angles, loop_lengths, origin = (0, 0)):
     return modules
 
 def draw_complex(cplx, pair_angles = None, loop_lengths = None, 
-                 origin = (0, 0)):
+                 sequence = None, origin = (0, 0)):
     """Returns the SVG image of a complex.
 
     The colors of domains have to be specified as property of the Domain

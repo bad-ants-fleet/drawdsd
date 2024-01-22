@@ -8,6 +8,17 @@ import numpy as np
 
 scale = 16
 
+def distance(p1, p2):
+    """Returns distance between two points."""
+    return np.sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
+
+
+def unitvec(p1, p2, dist = None):
+    """Returns unit vector from p1 to p2."""
+    if dist is None:
+        dist = distance(p1, p2) 
+    return (p2[0]-p1[0])/dist, (p2[1]-p1[1])/dist
+
 class DrawingModuleError(Exception):
     pass
 
@@ -43,60 +54,33 @@ def get_coords(i1, ang, c = 1):
 
 def get_a1(pa, a): # red, from pa to a
     """ Get angle from i1 to p1.
-    if pa=180 and a=0, then ang=270!
-    (previous is below current!)
     """
-    #print('a1', pa, a)
     if pa is None:
-        return agl(a-30+180) # from i1
+        return agl(a+30)
     rel = agl(pa-a)
-    if 0 < rel < 180:
-        return agl(a + rel/2 + 180)
+    if 0 <= rel < 180:
+        return agl(a + rel/2)
     if 180 <= rel < 360:
-        return agl(a + rel/2)
-    assert np.isclose(rel, 0)
-    return agl(a + 180)
-
-def get_a2(a, na): # green, from a to na
-    #print('a2', a, na)
-    if na is None:
-        return agl(a+30) # from i2
-    rel = agl(na-a)
-    if 0 < rel <= 180:
-        return agl(a + rel/2)
-    if 180 < rel < 360:
         return agl(a + rel/2 + 180)
-    assert np.isclose(rel, 0)
-    return a
+ 
+def get_a2(a, na): # green, from a to na
+    if na is None:
+        return agl(a-30) # from i2
+    rel = agl(na-a)
+    if 0 <= rel < 180:
+        return agl(a + rel/2)
+    if 180 <= rel < 360:
+        return agl(a + rel/2 + 180)
 
 def get_a3(pa, a): # black, from a to na
     if pa is None:
-        return agl(a-30+180) # from i3
-
-    rel = agl(pa-a)
-    #print('a3', pa, a, a-pa, rel)
-    if 0 < rel < 180:
-        return agl(a + rel/2 + 180)
-    if 180 <= rel < 360:
-        return agl(a + rel/2)
-    assert np.isclose(rel, 0)
-    return agl(a + 180)
+        return agl(a+30+180) # from i3
+    return get_a2(a, pa)
 
 def get_a4(a, na): # yellow, from a to na
-    #print('a4', a, na)
     if na is None:
-        return agl(a+30) # from i4
-    """
-    180 -> 0 == 0 -> 180 
-
-    """
-    rel = agl(na-a)
-    if 0 < rel <= 180:
-        return agl(a + rel/2)
-    if 180 < rel < 360:
-        return agl(a + rel/2 + 180)
-    assert np.isclose(rel, 0)
-    return agl(a)
+        return agl(a-30)
+    return get_a1(na, a)
 
 class fourway_module:
     def __init__(self, pair, t1, t2, t3, t4, p15, p23, p35, p43):
@@ -205,6 +189,35 @@ class fourway_module:
         if self.p1 is None:
             raise NotImplementedError('No starting point given!')
         if self.i1 is None: # Reverse direction (+180 angle)
+            self.i1 = get_coords(self.p1, agl(self.a1), self.k1)
+        if self.i2 is None:
+            self.i2 = get_coords(self.i1, self.angle, self.plength)
+        if self.i3 is None:
+            self.i3 = get_coords(self.i2, agl(self.angle+90), 2.5)
+        if self.i4 is None:
+            self.i4 = get_coords(self.i1, agl(self.angle+90), 2.5)
+        if self.p2 is None:
+            self.p2 = get_coords(self.i2, self.a2, self.k2)
+        if self.p3 is None:
+            self.p3 = get_coords(self.i3, self.a3, self.k3)
+        if self.p4 is None:
+            self.p4 = get_coords(self.i4, self.a4, self.k4)
+
+        #print(unitvec(self.p1, self.i1))
+        #print(unitvec(self.i1, self.i2))
+        #print(unitvec(self.i2, self.i3))
+        #print(unitvec(self.i3, self.i4))
+        #print(unitvec(self.i4, self.i1))
+
+    def infer_points_ccw(self):
+        """Infer remaining points given p1 and the angles.
+
+        TODO: Need implementation for a complex where p1 is None!
+            'A = x( r + r( + ) x*( + ) t2*( + ) )'
+        """
+        if self.p1 is None:
+            raise NotImplementedError('No starting point given!')
+        if self.i1 is None: # Reverse direction (+180 angle)
             self.i1 = get_coords(self.p1, agl(self.a1+180), self.k1)
         if self.i2 is None:
             self.i2 = get_coords(self.i1, self.angle, self.plength)
@@ -304,6 +317,19 @@ class hairpin_module:
         self.a4 = get_a4(agl(self.angle+180), self._nma4)
 
     def infer_points(self):
+        # autocomplete all coordinates.
+        if self.i1 is None: # Reverse dirction (+180 angle)
+            self.i1 = get_coords(self.p1, agl(self.a1 + 180), self.k1)
+        if self.i2 is None:
+            self.i2 = get_coords(self.i1, self.angle, self.plength)
+        if self.i3 is None:
+            self.i3 = get_coords(self.i2, agl(self.angle+90), 2.5)
+        if self.i4 is None:
+            self.i4 = get_coords(self.i1, agl(self.angle+90), 2.5)
+        if self.p4 is None:
+            self.p4 = get_coords(self.i4, self.a4, self.k4)
+
+    def infer_points_ccw(self):
         # autocomplete all coordinates.
         if self.i1 is None: # Reverse dirction (+180 angle)
             self.i1 = get_coords(self.p1, agl(self.a1 + 180), self.k1)
