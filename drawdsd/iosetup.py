@@ -21,13 +21,13 @@ def set_domain_colors(d):
         (~dom).color = f'rgb{col}'
     return
 
-def get_plot_params(kernel, pa = None, ll = None, seq = None):
-    cplx = read_pil_line(kernel)
-    return get_default_plot_params(cplx)
-
-def draw(kernel, pa = None, ll = None, seq = None, direction = 1):
-    cplx = read_pil_line(kernel)
-    svgC, pa, ll = draw_complex(cplx, pair_angles = pa, loop_lengths = ll, sequence = seq)
-    return get_drawing(svgC)
+#def get_plot_params(kernel, pa = None, ll = None, seq = None):
+#    cplx = read_pil_line(kernel)
+#    return get_default_plot_params(cplx)
+#
+#def draw(kernel, pa = None, ll = None, seq = None, direction = 1):
+#    cplx = read_pil_line(kernel)
+#    svgC = draw_complex(cplx, pair_angles = pa, loop_lengths = ll, sequence = seq)
+#    return get_drawing(svgC)
 
 

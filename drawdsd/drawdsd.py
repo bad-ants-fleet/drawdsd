@@ -12,13 +12,11 @@ from .components import fourway_module, hairpin_module
 def agl(a):
     return a % 360
 
-def get_default_plot_params(cplx):
+def get_default_plot_params(stable, ptable):
     """ Produce the defaults for:
         - pair_angles
         - loop_lengths
     """
-    ptable = list(cplx.pair_table)
-    stable = list(cplx.strand_table)
     pair_angles = []
     loop_lengths = []
     loop_angles = []
@@ -76,7 +74,7 @@ def get_segments(ptable, loop_lengths, loop_angles):
         p5, p3 = True, False
     return segments
 
-def get_raw_modules(ptable, stable, segments, pair_angles):
+def get_raw_modules(stable, ptable, segments, pair_angles):
     """Initialize the 4-way and the hairpin module.
     """
     modules, metadata = [], []
@@ -130,15 +128,13 @@ def get_raw_modules(ptable, stable, segments, pair_angles):
             metadata.append(meta)
     return modules, metadata
 
-def get_final_modules(cplx, pair_angles, loop_lengths, loop_angles, origin = (0, 0)):
-    stable = list(cplx.strand_table)
-    ptable = list(cplx.pair_table)
+def get_final_modules(stable, ptable, pair_angles, loop_lengths, loop_angles, origin = (0, 0)):
 
     # Get the helper datastructure segments.
     segments = get_segments(ptable, loop_lengths, loop_angles)
 
     # Returns all modules but has no knowledge on their neighborhood.
-    modules, metadata = get_raw_modules(ptable, stable, segments, pair_angles)
+    modules, metadata = get_raw_modules(stable, ptable, segments, pair_angles)
 
     # Now set all the small angles
     def helper_21(m, n):
@@ -229,8 +225,8 @@ def get_final_modules(cplx, pair_angles, loop_lengths, loop_angles, origin = (0,
     modules = done
     return modules
 
-def draw_complex(cplx, pair_angles = None, loop_lengths = None, loop_angles = None,
-                 rotate = 0, spacing = 0, sequence = None, origin = (0, 0)):
+def draw_complex(stable, ptable, pair_angles = None, loop_lengths = None, loop_angles = None,
+                 rotate = 0, spacing = 0, origin = (0, 0)):
     """Returns the SVG image of a complex.
 
     The colors of domains have to be specified as property of the Domain
@@ -250,8 +246,8 @@ def draw_complex(cplx, pair_angles = None, loop_lengths = None, loop_angles = No
         loop_lengths: the loop lengths used to draw this svg image
 
     """
-    pa, ll, la = get_default_plot_params(cplx)
 
+    pa, ll, la = get_default_plot_params(stable, ptable)
     assert pair_angles is None or len(pair_angles) == len(pa)
     assert loop_lengths is None or len(loop_lengths) == len(ll)
     assert loop_angles is None or len(loop_angles) == len(la)
@@ -268,7 +264,7 @@ def draw_complex(cplx, pair_angles = None, loop_lengths = None, loop_angles = No
     # Rotate complex
     pair_angles = [a+rotate for a in pair_angles]
 
-    modules = get_final_modules(cplx, pair_angles, loop_lengths, 
+    modules = get_final_modules(stable, ptable, pair_angles, loop_lengths, 
                                 loop_angles,
                                 origin = origin)
     objects = []
@@ -276,5 +272,5 @@ def draw_complex(cplx, pair_angles = None, loop_lengths = None, loop_angles = No
         objects.extend(draw_stem(*m.stem_data()))
         [objects.extend(x) for x in draw_tentacles(*m.tentacle_data())]
 
-    return objects, pair_angles, loop_lengths
+    return objects
 

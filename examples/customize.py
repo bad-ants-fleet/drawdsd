@@ -29,8 +29,8 @@ kerneldrawings = {
         'pa': {3: 180},
         'll': {}#{(1,1): 5}
          },
-    'A1': {'kernel': 'A1 = x a( y a*( z ) u a( y + x ) u a*( x + ) v ) z',
-           'pa': {1: 90, 3: 270},
+    'A1': {'kernel': 'A1 = x a( y a*( z ) u a( y + x ) u a*( e a*( x + ) ) v ) z',
+           'pa': {1: 90, 3: 270, 4:250},
            'll': {}
          },
  
@@ -44,8 +44,8 @@ kerneldrawings = {
            'll': {}
          },
     'D': {'kernel': 'D = a b( b( c ) b( x + c ) l ) y',
-           'pa': {1: 90},
-           'll': {(0,1): 15}
+          'pa': {1:90},
+           'll': {},
          },
     # Feature request: loop angles!
     'D1': {'kernel': 'D1 = a b( b( c ) b( x + c ) l ) y',
@@ -67,7 +67,7 @@ def main():
     """ A playground for trying plots.
     """
     # Choose one of the examples above ...
-    ddict = kerneldrawings['F']
+    ddict = kerneldrawings['A1']
 
     set_io_objects() # Using the default Domain, Complex objects of dsdobjects.
     
@@ -122,8 +122,11 @@ def main():
     # Customization 2 & 3: Let's choose "pair angles" and "loop lengths".
     #
     
+    stable = list(mycplx.strand_table)
+    ptable = list(mycplx.pair_table)
+
     # First, get the defaults.
-    pa, ll, la = get_default_plot_params(mycplx)
+    pa, ll, la = get_default_plot_params(stable, ptable)
    
     # Second, change the defaults. All values are 0-based and in order of the
     # kernel string input: 
@@ -140,14 +143,14 @@ def main():
             la[k][l] = v 
    
     # Third, get the SVG objects of the complex!
-    svgC, pa, ll = draw_complex(mycplx, pair_angles = pa, loop_lengths = ll, loop_angles = la, spacing = 0)
+    svgC = draw_complex(stable, ptable, pair_angles = pa, loop_lengths = ll, loop_angles = la, spacing = 0)
     
     # Last, draw the complex!
     svg = get_drawing(svgC, mycplx.name)
     #svg.append(draw.Text(f'{mycplx.name}:', 14, x = -25, y = 0, 
     #                     font_weight = 'bold', text_anchor='middle', valign='center'))
     svg.save_png(f'complex_{mycplx.name}.png')
-    svg.save_svg(f'complex_{mycplx.name}.svg')
+    #svg.save_svg(f'complex_{mycplx.name}.svg')
 
 
 if __name__ == '__main__':

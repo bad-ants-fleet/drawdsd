@@ -279,6 +279,8 @@ def unitvec(p1, p2, dist = None):
     """Returns unit vector from p1 to p2."""
     if dist is None:
         dist = distance(p1, p2) 
+    if dist == 0:
+        raise ValueError(f'Getting distance {dist} for points {p1} and {p2}.')
     return (p2[0]-p1[0])/dist, (p2[1]-p1[1])/dist
 
 def vec_rot(x, y, alpha):
@@ -308,7 +310,7 @@ def get_drawing(svgC, name = ''):
     svg.append(draw.Rectangle(minx, miny, 
                               dimx, dimy, fill='white'))
     svg.append(draw.Rectangle(minx+20, miny+20, 
-                              dimx-40, dimy-40, stroke_width=5, stroke = 'black', fill='none'))
+                              dimx-40, dimy-40, stroke_width=5, stroke = 'darkgray', fill='none'))
     
     bg_layer = []
     backbone = []
@@ -510,19 +512,27 @@ def truncate_domains(d, p5, p3):
         y1 = float(x[0][2])
         x2 = float(x[1][1])
         y2 = float(x[1][2])
-        ux, uy = unitvec((x1, y1), (x2, y2))
-        myd = min(distance((x1,y1),(x2,y2)), scale/6)
-        ps = end_point((x1, y1), (ux, uy), myd)
-        x[0][1], x[0][2] = str(round(ps[0], prec)), str(round(ps[1], prec))
+        try:
+            ux, uy = unitvec((x1, y1), (x2, y2))
+            myd = min(distance((x1,y1),(x2,y2)), scale/6)
+            ps = end_point((x1, y1), (ux, uy), myd)
+            x[0][1], x[0][2] = str(round(ps[0], prec)), str(round(ps[1], prec))
+        except ValueError:
+            # don't truncate if distance between points is too small
+            pass
     if p3:
         xs = float(x[-2][1])
         ys = float(x[-2][2])
         xn = float(x[-1][1])
         yn = float(x[-1][2])
-        ux, uy = unitvec((xn, yn), (xs, ys))
-        myd = min(distance((x1,y1),(x2,y2)), scale/6)
-        ps = end_point((xn, yn), (ux, uy), myd)
-        x[-1][1], x[-1][2] = str(round(ps[0], prec)), str(round(ps[1], prec))
+        try:
+            ux, uy = unitvec((xn, yn), (xs, ys))
+            myd = min(distance((x1,y1),(x2,y2)), scale/6)
+            ps = end_point((xn, yn), (ux, uy), myd)
+            x[-1][1], x[-1][2] = str(round(ps[0], prec)), str(round(ps[1], prec))
+        except ValueError:
+            # don't truncate if distance between points is too small
+            pass
     y = ' '.join([c[0]+','.join(c[1:]) for c in x])
     return y
 
