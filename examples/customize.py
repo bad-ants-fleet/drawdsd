@@ -140,7 +140,7 @@ def main():
             la[k][l] = v 
    
     # Third, get the SVG objects of the complex!
-    svgC, pa, ll = draw_complex(mycplx, pair_angles = pa, loop_lengths = ll, loop_angles = la, spacing = 5)
+    svgC, pa, ll = draw_complex(mycplx, pair_angles = pa, loop_lengths = ll, loop_angles = la, spacing = 0)
     
     # Last, draw the complex!
     svg = get_drawing(svgC, mycplx.name)

@@ -230,7 +230,7 @@ def get_final_modules(cplx, pair_angles, loop_lengths, loop_angles, origin = (0,
     return modules
 
 def draw_complex(cplx, pair_angles = None, loop_lengths = None, loop_angles = None,
-                 rotate = 0, spacing = 0, sequence = None, origin = (90, 180)):
+                 rotate = 0, spacing = 0, sequence = None, origin = (0, 0)):
     """Returns the SVG image of a complex.
 
     The colors of domains have to be specified as property of the Domain

@@ -28,10 +28,9 @@ def dom_path(dcolor, sw = None, da = None):
     p.ddsdinfo = 'backbone'
     return p
 
-
 def dom_txt(dname, x, y, ux, uy):
-    x = x + uy*scale
-    y = y - ux*scale
+    x = x + uy*scale*1.1
+    y = y - ux*scale*1.1
     return draw.Text(dname, 14, x = round(x, prec), y = round(y, prec), 
                      font_family = ffamily,
                      font_weight = dfont, 
