@@ -393,7 +393,6 @@ def get_drawing(svgC, name = ''):
             x = seg.args['d'].split()
             y = ' '.join(x[1:])
             p.args['d'] += ' '+y
-        #p.args['d'] = truncate_domains(p.args['d'], True, True)
         svg.append(p)
 
     svg.extend(bbn)
@@ -420,21 +419,20 @@ def estimate_dimensions(svgC):
                 maxy =  obj.args['y']
             if obj.args['y'] < miny:
                 miny =  obj.args['y']
+        elif obj.TAG_NAME == 'path' and obj.ddsdinfo == 'bground':
+            pass
+        elif obj.TAG_NAME == 'circle':
+            pass
         else:
-            try:
-                for x, y in (x[1:].split(',') for x in obj.args['d'].split()):
-                    if int(x) > maxx:
-                        maxx = int(x)
-                    if int(x) < minx:
-                        minx = int(x)
-                    if int(y) > maxy:
-                        maxy = int(y)
-                    if int(y) < miny:
-                        miny = int(y)
-            except KeyError:
-                pass
-            except ValueError:
-                pass
+            for x, y in (x[1:].split(',') for x in obj.args['d'].split()):
+                if int(float(x)) > maxx:
+                    maxx = int(float(x))
+                if int(float(x)) < minx:
+                    minx = int(float(x))
+                if int(float(y)) > maxy:
+                    maxy = int(float(y))
+                if int(float(y)) < miny:
+                    miny = int(float(y))
     dimx = maxx - minx
     dimy = maxy - miny
     return dimx, dimy, minx, miny
@@ -447,8 +445,8 @@ def get_rgb_palette(num):
 def draw_stem(i1, i2, i3, i4, p15, p23, p35, p43, color, angle, length, seqT, seqB, nameT, nameB):
     circles = []
     dompathT = dom_path(color)
-    tseqT = list(seqT)
-    tseqB = list(seqB)
+    tseqT = list(seqT) if seqT is not None else []
+    tseqB = list(seqB) if seqB is not None else []
 
     (x1, y1) = i1
     (x2, y2) = i2
@@ -562,7 +560,7 @@ def draw_tentacles(dns, dls, dcs, dzs, dos, dss, dms):
             circles = []
             for (dname, dlen, dcolor, seq, end) in zip(ns, ls, cs, ss, es):
                 # Initialize path
-                tseq = list(seq)
+                tseq = list(seq) if seq is not None else []
                 sw, da = (None, None) if dname else (2, 5) # fake domain
                 p = dom_path(dcolor, sw, da)
                 sdlen = scale * dlen
@@ -601,7 +599,7 @@ def draw_tentacles(dns, dls, dcs, dzs, dos, dss, dms):
             off = scale/2
             paths = []
             for (dname, dlen, dcolor, seq, end) in zip(ns, ls, cs, ss, es):
-                tseq = list(seq)
+                tseq = list(seq) if seq is not None else []
                 rsdlen = scale * dlen # remaining scaled domain length
                 tlabel, tl = scale * dlen / 2, True
                 p = dom_path(dcolor)

@@ -225,7 +225,7 @@ def get_final_modules(stable, ptable, pair_angles, loop_lengths, loop_angles, or
     modules = done
     return modules
 
-def draw_complex(stable, ptable, pair_angles = None, loop_lengths = None, loop_angles = None,
+def get_svg_components(stable, ptable, pair_angles = None, loop_lengths = None, loop_angles = None,
                  rotate = 0, spacing = 0, origin = (0, 0)):
     """Returns the SVG image of a complex.
 

@@ -17,10 +17,11 @@ generated images that are *almost* exactly like you want them? Then try this.
 ### 2. Customizing the SVG output:
 This example assumes you are somewhat comfortable working with the [dsdobjects]
 library (although you may not need more than the few lines of code below).
-Customization involves three types of parameters:
+Customization involves various types of parameters:
  - the color of domains
  - the angles of paired domains
  - the distances of unpaired domains
+ - the angles of unpaired domains
 
 ```py
 from dsdobjects.objectio import set_io_objects, read_pil, read_pil_line

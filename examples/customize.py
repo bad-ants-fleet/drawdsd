@@ -4,7 +4,8 @@ import random
 import drawsvg as draw
 from dsdobjects.objectio import set_io_objects, read_pil, read_pil_line
 from dsdobjects.iupac_utils import reverse_wc_complement
-from drawdsd import draw_complex, get_default_plot_params
+from drawdsd.iosetup import draw_complex
+from drawdsd.drawdsd import get_default_plot_params
 from drawdsd.rendering import get_drawing, get_rgb_palette
 
 # A few examples.
@@ -115,8 +116,6 @@ def main():
         dom.sequence = ''.join([random.choice('ACGT') for _ in range(len(dom))])
         (~dom).sequence = reverse_wc_complement(dom.sequence, material = 'DNA')
         #print(dom, dom.sequence)
-
-
             
     #
     # Customization 2 & 3: Let's choose "pair angles" and "loop lengths".
@@ -143,12 +142,7 @@ def main():
             la[k][l] = v 
    
     # Third, get the SVG objects of the complex!
-    svgC = draw_complex(stable, ptable, pair_angles = pa, loop_lengths = ll, loop_angles = la, spacing = 0)
-    
-    # Last, draw the complex!
-    svg = get_drawing(svgC, mycplx.name)
-    #svg.append(draw.Text(f'{mycplx.name}:', 14, x = -25, y = 0, 
-    #                     font_weight = 'bold', text_anchor='middle', valign='center'))
+    svg = draw_complex(stable, ptable, pair_angles = pa, loop_lengths = ll, loop_angles = la)
     svg.save_png(f'complex_{mycplx.name}.png')
     #svg.save_svg(f'complex_{mycplx.name}.svg')
 

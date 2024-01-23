@@ -1,7 +1,7 @@
 
 from dsdobjects.objectio import set_io_objects, read_pil, read_pil_line
 
-from .drawdsd import get_default_plot_params, draw_complex
+from .drawdsd import get_svg_components
 from .rendering import get_rgb_palette, get_drawing
 
 def set_domain_lengths(pil_like):
@@ -21,13 +21,42 @@ def set_domain_colors(d):
         (~dom).color = f'rgb{col}'
     return
 
-#def get_plot_params(kernel, pa = None, ll = None, seq = None):
-#    cplx = read_pil_line(kernel)
-#    return get_default_plot_params(cplx)
-#
-#def draw(kernel, pa = None, ll = None, seq = None, direction = 1):
-#    cplx = read_pil_line(kernel)
-#    svgC = draw_complex(cplx, pair_angles = pa, loop_lengths = ll, sequence = seq)
-#    return get_drawing(svgC)
+def draw_complex(stable, ptable, name = '', **kwargs):
+    svgC = get_svg_components(stable, ptable, **kwargs)
+    return get_drawing(svgC, name)
+
+def main():
+    # An minimal workflow using the dsdobjects library.
+    import sys
+
+    if False:
+        # Example input (pil format):
+        pil = """
+        sequence x = GGGGGNNNNN: 10
+        sequence b = ACGTTNNNNN: 10
+        sequence t = 5
+
+        F1 = x( t( b + ) ) t*
+        F2 = x( t( b ) ) t*
+        """
+    else:
+        pil = "".join(sys.stdin.readlines())
+
+    set_io_objects() # Using the default Domain, Complex objects of dsdobjects.
+
+    info = read_pil(pil)
+    domains = info['domains']
+    complexes = info['complexes']
+
+    set_domain_colors(domains)
+
+    for n, c in complexes.items():
+        print(f'Drawing complex_{n}')
+        stable = list(c.strand_table)
+        ptable = list(c.pair_table)
+        svg = draw_complex(stable, ptable, name = n)
+        svg.save_png(f'complex_{n}.png')
 
 
+if __name__ == '__main__':
+    main()
