@@ -12,7 +12,7 @@ generated images that are *almost* exactly like you want them? Then try this.
 ## Quickstart
 
 ### 1. Using Jupyter notebooks:
-**This interface is in prepration, it does not work yet!** 
+**This interface is in prepration.** 
 
 ### 2. Customizing the SVG output:
 This example assumes you are somewhat comfortable working with the [dsdobjects]
@@ -78,22 +78,13 @@ svg.savePng(f'drawing_complex_{mycplx.name}.png')
 You can find a modified version of this script in the [examples] folder: [customize.py].
 
 ## Version
- - v0.1
+ - v0.2
 
 ## TODOs (ranking from high to low priority)
- - draw 5' squares and 3' arrow-heads (test for 'A = x( a ) y( a )')
- - force text on top of drawings.
- - support "p3 attachment" (e.g. for 'A = x( r + r( + ) x*( + ) t2*( + ) )')
- - fix loop-lengths for hairpins
- - provide interface for pair-lengths and loop-angles.
  - provide interface for plotting parameters such as path width, font size, etc.
- - rotate complexes and fix alignment of domain names (e.g. all pair_angles +5)
  - find nice examples for rendering and make a notebook gallery.
- - draw sequence information.
  - provide better default rendering (e.g naview-like, forgi-like)
  - provide additional high-level input from PIL file only.
- - support specification of pair-angles and loop-lengths in kernel string.
- - support Bezier curves for loops (as alternative to rectangles).
 
 # Have fun!
 

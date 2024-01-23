@@ -21,8 +21,9 @@ def get_default_plot_params(cplx):
     stable = list(cplx.strand_table)
     pair_angles = []
     loop_lengths = []
+    loop_angles = []
     for si, strand in enumerate(ptable):
-        nlen, llen = [], 0
+        nlen, nang, llen = [], [], 0
         for di, pair in enumerate(strand):
             if pair is None: # unpaired
                 llen += (stable[si][di].length)
@@ -30,13 +31,15 @@ def get_default_plot_params(cplx):
                 if pair > (si, di):
                     pair_angles.append(0)
                 nlen.append(llen)
+                nang.append(None)
                 llen = 0
         nlen.append(llen)
+        nang.append(None)
         loop_lengths.append(nlen)
-    return pair_angles, loop_lengths
+        loop_angles.append(nang)
+    return pair_angles, loop_lengths, loop_angles
 
-#TODO: change 5' and 3' to be part of segments. 
-def get_segments(ptable, loop_lengths):
+def get_segments(ptable, loop_lengths, loop_angles):
     """Helper function to decompose a pair table into segments.
 
     Segments[(pair, pair)] = ([segment1, segment2], (ll1, ll2), (5' end, 3' end)),
@@ -50,13 +53,15 @@ def get_segments(ptable, loop_lengths):
         for di, pair in enumerate(strand):
             if pos:
                 ll2 = loop_lengths[si][lli]
+                la2 = loop_angles[si][lli]
             else:
                 ll1 = loop_lengths[si][lli]
+                la1 = loop_angles[si][lli]
             if pair is not None:
                 pos += 1
                 lli += 1
                 if identity is not None:
-                    segments[identity] = seg, (ll1, ll2), (p5, p3)
+                    segments[identity] = seg, (ll1, ll2), (la1, la2), (p5, p3)
                     identity, seg, pos = None, [[], []], 1
                     ll1, ll2 = 0, 0
                     p5, p3 = False, False
@@ -65,7 +70,7 @@ def get_segments(ptable, loop_lengths):
                 seg[pos].append([si, di])
         # Strand break means we start a new segment!
         p3 = True
-        segments[identity] = seg, (ll1, ll2), (p5, p3)
+        segments[identity] = seg, (ll1, ll2), (la1, la2), (p5, p3)
         identity, seg, pos = None, [[], []], 0
         ll1, ll2, lli = 0, 0, 0
         p5, p3 = True, False
@@ -83,22 +88,23 @@ def get_raw_modules(ptable, stable, segments, pair_angles):
                 continue
             (sj, dj) = pair
             # Get both segments by their identifier.
-            sg1, (k1, k2), (p15, p23) = segments[(si, di), (sj, dj)]
-            sg2, (k3, k4), (p35, p43) = segments[(sj, dj), (si, di)]
+            sg1, (k1, k2), (fa1, fa2), (p15, p23) = segments[(si, di), (sj, dj)]
+            sg2, (k3, k4), (fa3, fa4), (p35, p43) = segments[(sj, dj), (si, di)]
             # The stem is formed via the single paired domain.
             stem = [stable[si][di], stable[sj][dj]] 
             # The tentacles listed in segments.
             t1 = [stable[i][j] for (i, j) in sg1[0]]
             t4 = [stable[i][j] for (i, j) in sg2[1]]
             # Check if it is a hairpin!
-            if sg1[1] and sg2[0] == [] and sg1[1][-1] == [sj, dj-1]:
+            if (sg1[1] and sg2[0] == [] and sg1[1][-1] == [sj, dj-1]) or \
+                    (sg1[1] == [] and sg2[0] == [] and (si, di+1) == (sj, dj) and not p23 and not p35):
                 th = [stable[i][j] for (i, j) in sg1[1]]
                 m = hairpin_module(stem, t1, t4, th, p15, p43)
                 # Provide the loop_length data
                 if k1: m.k1 = k1
-                if k2: m.kh = k2 # TODO: not working yet
-                assert not k3
                 if k4: m.k4 = k4
+                m.fa1 = fa1 if fa1 is None else -fa1 % 360
+                m.fa4 = fa4 if fa4 is None else -fa4 % 360
                 # We pretend it has four ends to save some code later.
                 meta = [[*sg1[0], [si, di], *sg1[1]], 
                         [         [sj, dj], *sg2[1]]]
@@ -111,6 +117,10 @@ def get_raw_modules(ptable, stable, segments, pair_angles):
                 if k2: m.k2 = k2
                 if k3: m.k3 = k3
                 if k4: m.k4 = k4
+                m.fa1 = fa1 if fa1 is None else -fa1 % 360
+                m.fa2 = fa2 if fa2 is None else -fa2 % 360
+                m.fa3 = fa3 if fa3 is None else -fa3 % 360
+                m.fa4 = fa4 if fa4 is None else -fa4 % 360
                 meta = [[*sg1[0], [si, di], *sg1[1]], 
                         [*sg2[0], [sj, dj], *sg2[1]]]
             # Provide the pair_angle data
@@ -120,12 +130,12 @@ def get_raw_modules(ptable, stable, segments, pair_angles):
             metadata.append(meta)
     return modules, metadata
 
-def get_final_modules(cplx, pair_angles, loop_lengths, origin = (0, 0)):
+def get_final_modules(cplx, pair_angles, loop_lengths, loop_angles, origin = (0, 0)):
     stable = list(cplx.strand_table)
     ptable = list(cplx.pair_table)
 
     # Get the helper datastructure segments.
-    segments = get_segments(ptable, loop_lengths)
+    segments = get_segments(ptable, loop_lengths, loop_angles)
 
     # Returns all modules but has no knowledge on their neighborhood.
     modules, metadata = get_raw_modules(ptable, stable, segments, pair_angles)
@@ -196,18 +206,31 @@ def get_final_modules(cplx, pair_angles, loop_lengths, origin = (0, 0)):
     # Finally, infer all points.
     m = modules[0]
     m.p1 = origin
-    for m in modules:
+    done = []
+    maxiter = len(modules) * len(modules)
+    it = 0
+    while len(modules):
+        m = modules.pop(0)
         m.angle = m.angle # Re-setting the angle updates all small angles!
         m.p1 = getattr(*m.mp1)
         if hasattr(m, 'mp2'): # It is not a hairpin.
             m.p2 = getattr(*m.mp2)
             m.p3 = getattr(*m.mp3)
         m.p4 = getattr(*m.mp4)
-        m.infer_points()
+        if m.infer_points_p1():
+            done.append(m)
+        elif m.infer_points_p4():
+            done.append(m)
+        else:
+            modules.append(m)
+        if it > maxiter:
+            raise SystemExit('Disconnected Complexes')
+        it += 1 
+    modules = done
     return modules
 
-def draw_complex(cplx, pair_angles = None, loop_lengths = None, 
-                 sequence = None, origin = (0, 0)):
+def draw_complex(cplx, pair_angles = None, loop_lengths = None, loop_angles = None,
+                 rotate = 0, spacing = 0, sequence = None, origin = (90, 180)):
     """Returns the SVG image of a complex.
 
     The colors of domains have to be specified as property of the Domain
@@ -227,16 +250,26 @@ def draw_complex(cplx, pair_angles = None, loop_lengths = None,
         loop_lengths: the loop lengths used to draw this svg image
 
     """
-    pa, ll = get_default_plot_params(cplx)
+    pa, ll, la = get_default_plot_params(cplx)
+
     assert pair_angles is None or len(pair_angles) == len(pa)
     assert loop_lengths is None or len(loop_lengths) == len(ll)
+    assert loop_angles is None or len(loop_angles) == len(la)
 
     if pair_angles is None:
         pair_angles = pa
     if loop_lengths is None:
         loop_lengths = ll
+    if loop_angles is None:
+        loop_angles = la
+
+    # Provide spacing
+    loop_lengths = [[(i+spacing) if (i==0) else i for i in s] for s in loop_lengths]
+    # Rotate complex
+    pair_angles = [a+rotate for a in pair_angles]
 
     modules = get_final_modules(cplx, pair_angles, loop_lengths, 
+                                loop_angles,
                                 origin = origin)
     objects = []
     for m in modules:

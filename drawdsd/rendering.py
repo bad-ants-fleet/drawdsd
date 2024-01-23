@@ -58,7 +58,7 @@ def nuc_circle(x, y, c, ux, uy, off = scale/8):
 def nuc_txt(char, x, y, ux, uy, off = scale/8):
     x = x - uy*off
     y = y + ux*off
-    return draw.Text(char, round(scale*2/3, prec), round(x, prec), round(y, prec), 
+    return draw.Text(char, round(scale*1/2, prec), round(x, prec), round(y, prec), 
                      font_family = ffamily,
                      font_weight = dfont, 
                      dominant_baseline='middle',
@@ -161,7 +161,7 @@ def get_detour_circ(p0, pN, dtarget):
 
     c = dist_0N # cordlength
     a = ddetour # arclength
-    points = 10 *round(a/scale)
+    points = round(a-0.5)
     assert not a_eq_b(a, c)
 
     r, phi, psi, off = get_radius(a, c)
@@ -294,7 +294,7 @@ def end_point(p0, v, l):
     return p0[0] + v[0]*l, p0[1] + v[1]*l
 
 # Interface 
-def get_drawing(svgC):
+def get_drawing(svgC, name = ''):
     # Initialize the SVG image & background
     dimx, dimy, minx, miny = estimate_dimensions(svgC)
 
@@ -385,6 +385,7 @@ def get_drawing(svgC):
         p = draw.Path(**(path[0]).args)
         p.args['stroke'] = 'gray'
         p.args['stroke-width'] = 16
+        p.args['stroke-dasharray'] = None,
         p.args['stroke-linecap'] = 'butt'
         d = p.args['d']
         for seg in path[1:]:
@@ -397,6 +398,13 @@ def get_drawing(svgC):
     svg.extend(bbn)
     svg.extend(nuc_layer)
     svg.extend(txt_layer)
+
+    # Draw name in right upper corner
+    if name:
+        svg.append(draw.Text(name, 14, x = minx + 30, y = miny + 40,
+                     font_family = ffamily,
+                     font_weight = dfont))
+
     return svg
 
 def estimate_dimensions(svgC):

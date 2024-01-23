@@ -142,6 +142,10 @@ class fourway_module:
         
 
         # get/set angles
+        self.fa1 = None
+        self.fa2 = None
+        self.fa3 = None
+        self.fa4 = None
         self._pma1 = None # prev module angle 1
         self._nma2 = None # next module angle 2
         self._pma3 = None
@@ -175,19 +179,19 @@ class fourway_module:
     def angle(self, angle):
         """Sets the angle, and adjusts all small angles accordingly."""
         self._angle = agl(angle)
-        self.a1 = get_a1(self._pma1, self.angle)
-        self.a2 = get_a2(self.angle, self._nma2)
-        self.a3 = get_a3(self._pma3, agl(self.angle+180))
-        self.a4 = get_a4(agl(self.angle+180), self._nma4)
+        self.a1 = get_a1(self._pma1, self.angle) if (self.fa1 is None) else self.fa1
+        self.a2 = get_a2(self.angle, self._nma2) if (self.fa2 is None) else self.fa2
+        self.a3 = get_a3(self._pma3, agl(self.angle+180)) if (self.fa3 is None) else self.fa3
+        self.a4 = get_a4(agl(self.angle+180), self._nma4) if (self.fa4 is None) else self.fa4
 
-    def infer_points(self):
+    def infer_points_p1(self):
         """Infer remaining points given p1 and the angles.
 
         TODO: Need implementation for a complex where p1 is None!
             'A = x( r + r( + ) x*( + ) t2*( + ) )'
         """
         if self.p1 is None:
-            raise NotImplementedError('No starting point given!')
+            return False
         if self.i1 is None: # Reverse direction (+180 angle)
             self.i1 = get_coords(self.p1, agl(self.a1), self.k1)
         if self.i2 is None:
@@ -202,35 +206,28 @@ class fourway_module:
             self.p3 = get_coords(self.i3, self.a3, self.k3)
         if self.p4 is None:
             self.p4 = get_coords(self.i4, self.a4, self.k4)
+        return True
 
-        #print(unitvec(self.p1, self.i1))
-        #print(unitvec(self.i1, self.i2))
-        #print(unitvec(self.i2, self.i3))
-        #print(unitvec(self.i3, self.i4))
-        #print(unitvec(self.i4, self.i1))
-
-    def infer_points_ccw(self):
-        """Infer remaining points given p1 and the angles.
-
-        TODO: Need implementation for a complex where p1 is None!
-            'A = x( r + r( + ) x*( + ) t2*( + ) )'
-        """
-        if self.p1 is None:
-            raise NotImplementedError('No starting point given!')
-        if self.i1 is None: # Reverse direction (+180 angle)
-            self.i1 = get_coords(self.p1, agl(self.a1+180), self.k1)
-        if self.i2 is None:
-            self.i2 = get_coords(self.i1, self.angle, self.plength)
-        if self.i3 is None:
-            self.i3 = get_coords(self.i2, agl(self.angle+270), 2.5)
-        if self.i4 is None:
-            self.i4 = get_coords(self.i1, agl(self.angle+270), 2.5)
-        if self.p2 is None:
-            self.p2 = get_coords(self.i2, self.a2, self.k2)
-        if self.p3 is None:
-            self.p3 = get_coords(self.i3, self.a3, self.k3)
+    def infer_points_p4(self):
+        # autocomplete all coordinates.
         if self.p4 is None:
-            self.p4 = get_coords(self.i4, self.a4, self.k4)
+            return False
+        if self.i4 is None:
+            self.i4 = get_coords(self.p4, agl(self.a4+180), self.k4)
+        if self.i3 is None:
+            self.i3 = get_coords(self.i4, self.angle, self.plength)
+        if self.i2 is None:
+            self.i2 = get_coords(self.i3, agl(self.angle-90), 2.5)
+        if self.i1 is None: # Reverse dirction (+180 angle)
+            self.i1 = get_coords(self.i4, agl(self.angle-90), 2.5)
+        if self.p3 is None: # Reverse dirction (+180 angle)
+            self.p3 = get_coords(self.i3, self.a3, self.k3)
+        if self.p2 is None: # Reverse dirction (+180 angle)
+            self.p2 = get_coords(self.i2, self.a2, self.k2)
+        if self.p1 is None: # Reverse dirction (+180 angle)
+            self.p1 = get_coords(self.i1, agl(self.a1+180), self.k1)
+        return True
+
 
     def stem_data(self):
         return (self.i1, self.i2, self.i3, self.i4, 
@@ -241,13 +238,13 @@ class fourway_module:
 
     def tentacle_data(self):
         # paired domains
-        dns = [self.n1, self.n2, self.n3, self.n4]
-        dls = [self.l1, self.l2, self.l3, self.l4]
-        dcs = [self.c1, self.c2, self.c3, self.c4]
-        dzs = [self.p1, self.i2, self.p3, self.i4]
-        dos = [self.i1, self.p2, self.i3, self.p4]
-        dss = [self.s1, self.s2, self.s3, self.s4]
-        dms = [self.m1, self.m2, self.m3, self.m4]
+        dns = [self.n1, self.n2, self.n3, self.n4] # names 
+        dls = [self.l1, self.l2, self.l3, self.l4] # lengths
+        dcs = [self.c1, self.c2, self.c3, self.c4] # colors
+        dzs = [self.p1, self.i2, self.p3, self.i4] # p0s
+        dos = [self.i1, self.p2, self.i3, self.p4] # pNs
+        dss = [self.s1, self.s2, self.s3, self.s4] # sequences
+        dms = [self.m1, self.m2, self.m3, self.m4] # markers (5', 3')
         return dns, dls, dcs, dzs, dos, dss, dms
 
 class hairpin_module:
@@ -265,7 +262,6 @@ class hairpin_module:
 
         self.p15 = p15
         self.p43 = p43
-
 
         self.n1 = [dom.name for dom in t1] 
         self.l1 = [dom.length for dom in t1] 
@@ -285,13 +281,17 @@ class hairpin_module:
         if t4 and p43: 
             self.m4[-1] = 'p3' 
             self.p43 = False
+
         self.nh = [dom.name for dom in th] 
         self.lh = [dom.length for dom in th] 
+        self.kh = sum(self.lh)
         self.ch = [dom.color for dom in th] 
         self.sh = [dom.sequence for dom in th] 
         self.mh = [False for dom in th] 
 
         # get/set Angle/Coordinates
+        self.fa1 = None
+        self.fa4 = None
         self._pma1 = None
         self._nma4 = None
         self.angle = 0
@@ -306,6 +306,7 @@ class hairpin_module:
         self.i3 = None
         self.i4 = None
 
+
     @property
     def angle(self):
         return self._angle
@@ -313,13 +314,15 @@ class hairpin_module:
     @angle.setter
     def angle(self, angle):
         self._angle = agl(angle)
-        self.a1 = get_a1(self._pma1, self.angle)
-        self.a4 = get_a4(agl(self.angle+180), self._nma4)
+        self.a1 = get_a1(self._pma1, self.angle) if (self.fa1 is None) else self.fa1
+        self.a4 = get_a4(agl(self.angle+180), self._nma4) if (self.fa4 is None) else self.fa4
 
-    def infer_points(self):
+    def infer_points_p1(self):
         # autocomplete all coordinates.
+        if self.p1 is None:
+            return False
         if self.i1 is None: # Reverse dirction (+180 angle)
-            self.i1 = get_coords(self.p1, agl(self.a1 + 180), self.k1)
+            self.i1 = get_coords(self.p1, agl(self.a1), self.k1)
         if self.i2 is None:
             self.i2 = get_coords(self.i1, self.angle, self.plength)
         if self.i3 is None:
@@ -328,19 +331,24 @@ class hairpin_module:
             self.i4 = get_coords(self.i1, agl(self.angle+90), 2.5)
         if self.p4 is None:
             self.p4 = get_coords(self.i4, self.a4, self.k4)
+        return True
 
-    def infer_points_ccw(self):
+    def infer_points_p4(self):
         # autocomplete all coordinates.
-        if self.i1 is None: # Reverse dirction (+180 angle)
-            self.i1 = get_coords(self.p1, agl(self.a1 + 180), self.k1)
-        if self.i2 is None:
-            self.i2 = get_coords(self.i1, self.angle, self.plength)
-        if self.i3 is None:
-            self.i3 = get_coords(self.i2, agl(self.angle+270), 2.5)
-        if self.i4 is None:
-            self.i4 = get_coords(self.i1, agl(self.angle+270), 2.5)
         if self.p4 is None:
-            self.p4 = get_coords(self.i4, self.a4, self.k4)
+            return False
+        if self.i4 is None:
+            self.i4 = get_coords(self.p4, agl(self.a4+180), self.k4)
+        if self.i3 is None:
+            self.i3 = get_coords(self.i4, self.angle, self.plength)
+        if self.i2 is None:
+            self.i2 = get_coords(self.i3, agl(self.angle-90), 2.5)
+        if self.i1 is None: # Reverse dirction (+180 angle)
+            self.i1 = get_coords(self.i4, agl(self.angle-90), 2.5)
+        if self.p1 is None: # Reverse dirction (+180 angle)
+            self.p1 = get_coords(self.i1, agl(self.a1+180), self.k1)
+        return True
+
 
     def stem_data(self):
         return (self.i1, self.i2, self.i3, self.i4, 
