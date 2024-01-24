@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys
+import sys, argparse
 from dsdobjects.objectio import set_io_objects, read_pil, read_pil_line
 
 from .drawdsd import get_svg_components
@@ -30,6 +30,43 @@ def draw_complex(cplx, **kwargs):
     return get_drawing(svgC, cplx.name), pa, ll, la
 
 def main():
+    """A wrapper to call drawDSD from the command line."""
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        description="A wrapper to call drawDSD from the command line.",
+    )
+    parser.add_argument("-v", "--verbose", 
+            action = "count", default = 0, 
+            help = "Verbose output")
+    parser.add_argument("-a", "--pair-angles", 
+            nargs='+', metavar='<int>:<flt>', default = [],
+            help="Specify pair angles, e.g.: -a 1:90 3:180")
+    parser.add_argument("-l", "--loop-lengths", 
+            nargs='+', metavar='<int>,<int>:<flt>', default = [],
+            help="Specify loop lengths, e.g.: -l 0,1:5 1,4:3")
+    parser.add_argument("-k", "--loop-angles", 
+            nargs='+', metavar='<int>,<int>:<flt>', default = [],
+            help="Specify loop angles, e.g.: -l 0,1:-45 1,4:0")
+    parser.add_argument("-r", "--rotate", default = 0, type=float,
+            help = "Rotate the whole complex by angle.")
+    parser.add_argument("-s", "--spacing", default = 0, type=float,
+            help = "Include s spacing for 0-loops.")
+    args = parser.parse_args()
+
+    pad = {}
+    for (k, v) in (x.split(':') for x in args.pair_angles):
+        pad[int(k)] = float(v)
+
+    lld = {}
+    for (k, v) in (x.split(':') for x in args.loop_lengths):
+        sid, did = k.split(',')
+        lld[(int(sid), int(did))] = float(v)
+
+    lad = {}
+    for (k, v) in (x.split(':') for x in args.loop_angles):
+        sid, did = k.split(',')
+        lad[(int(sid), int(did))] = float(v)
+
     # An minimal workflow using the dsdobjects library.
     pil = ''
     if sys.stdout.isatty():
@@ -41,15 +78,7 @@ def main():
         sequence t = NNNNN: 5
         sequence x = NNNNNNNNNN: 10
         sequence b = NNNNNNNNNN: 10
-
-        # DrawDSD does not support single strands atm, 
-        # so here the toehold is assumed to be paired!
-        A = a t( x + )
-        B = x t( b + )
         F1 = x( t( b + ) ) t*
-        F2 = a t( x( + t* ) )
-        F3 = a t( x( t* ) )
-        F4 = a t( t x( a ) )
         """
         print(f"# Using example pil input:\n{pil}")
 
@@ -58,17 +87,36 @@ def main():
     info = read_pil(pil)
     domains = info['domains']
     complexes = info['complexes']
-
     set_domain_colors(domains)
 
     for n, cplx in complexes.items():
-        print(f'Drawing complex_{n}')
-        svg, pa, ll, la = draw_complex(cplx)
-        #print(f'pair-angles = {pa}')
-        #print(f'loop-lengths = {ll}')
-        #print(f'loop-angles = {la}')
-        svg.save_png(f'complex_{n}.png')
-
+        print(f'Drawing complex {n}:')
+        if not (pad or lld or lad):
+            svg, pa, ll, la = draw_complex(cplx, rotate = args.rotate, spacing = args.spacing)
+            print(f' Plotting parameters:')
+            print(f'  - pair-angles = {pa}')
+            print(f'  - loop-lengths = {ll}')
+            print(f'  - loop-angles = {la}')
+            svg.save_png(f'complex_{n}.png')
+        else:
+            _, pa, ll, la = draw_complex(cplx)
+            for k, v in pad.items():
+                pa[k] = v
+            for (k, l), v in lld.items():
+                ll[k][l] = v 
+            for (k, l), v in lad.items():
+                la[k][l] = v 
+            svg, pa, ll, la = draw_complex(cplx, 
+                                       pair_angles = pa, 
+                                       loop_lengths = ll, 
+                                       loop_angles = la, 
+                                       rotate = args.rotate, 
+                                       spacing = args.spacing)
+            print(f' Plotting parameters:')
+            print(f'  - pair-angles = {pa}')
+            print(f'  - loop-lengths = {ll}')
+            print(f'  - loop-angles = {la}')
+            svg.save_png(f'complex_{n}.png')
 
 if __name__ == '__main__':
     main()

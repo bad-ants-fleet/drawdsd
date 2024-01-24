@@ -1,0 +1,16 @@
+# drawDSD -a 3:-90 4:-45 -l 0,1:2.5
+
+length a = 10 
+length b = 10
+length c = 10
+length d = 10
+length s1 = 1
+length s2 = 2
+length s3 = 3
+length s4 = 4
+length t = 5
+length x = 5
+length y = 5
+length z = 5
+
+A = t x( a b( s1 c( + c* ) ) a*( d*( s3 ) y +  ) ) y

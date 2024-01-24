@@ -1,0 +1,10 @@
+# drawDSD -a 1:90
+
+length a = 10 
+length b = 10
+length c = 10
+length l = 15
+length x = 5
+length y = 5
+
+D = a b( b( c ) b( x + c ) l ) y

@@ -1,0 +1,10 @@
+# drawDSD -l 0,1:7
+
+length a = 10 
+length b = 10
+length c = 10
+length l = 15
+length x = 5
+length y = 5
+
+E = x a( c b( y + ) c ) y*

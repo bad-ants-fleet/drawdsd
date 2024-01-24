@@ -1,0 +1,15 @@
+# drawDSD -a 1:0 2:90 3:-45 4:-135 -k 0,1:45 1,3:-45 2,0:-45
+
+length a = 10 
+length b = 10
+length c = 10
+length s1 = 1
+length s2 = 2
+length s3 = 3
+length s4 = 4
+length t = 5
+length x = 5
+length y = 5
+length z = 5
+
+B = a( b + b( c( s4 ) x + y ) c*( + ) c*(  ) )
