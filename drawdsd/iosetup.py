@@ -1,4 +1,6 @@
+#!/usr/bin/env python
 
+import sys
 from dsdobjects.objectio import set_io_objects, read_pil, read_pil_line
 
 from .drawdsd import get_svg_components
@@ -21,26 +23,35 @@ def set_domain_colors(d):
         (~dom).color = f'rgb{col}'
     return
 
-def draw_complex(stable, ptable, name = '', **kwargs):
+def draw_complex(cplx, **kwargs):
+    stable = list(cplx.strand_table)
+    ptable = list(cplx.pair_table)
     svgC = get_svg_components(stable, ptable, **kwargs)
-    return get_drawing(svgC, name)
+    return get_drawing(svgC, cplx.name)
 
 def main():
     # An minimal workflow using the dsdobjects library.
-    import sys
-
-    if False:
-        # Example input (pil format):
-        pil = """
-        sequence x = GGGGGNNNNN: 10
-        sequence b = ACGTTNNNNN: 10
-        sequence t = 5
-
-        F1 = x( t( b + ) ) t*
-        F2 = x( t( b ) ) t*
-        """
-    else:
+    pil = ''
+    if sys.stdout.isatty():
+        print("# Reading pil format from STDIN, Use Ctrl-D to finish.")
         pil = "".join(sys.stdin.readlines())
+    if not pil:
+        pil = """
+        sequence a = NNNNNNNNNN: 10
+        sequence t = NNNNN: 5
+        sequence x = NNNNNNNNNN: 10
+        sequence b = NNNNNNNNNN: 10
+
+        # DrawDSD does not support single strands atm, 
+        # so here the toehold is assumed to be paired!
+        A = a t( x + )
+        B = x t( b + )
+        F1 = x( t( b + ) ) t*
+        F2 = a t( x( + t* ) )
+        F3 = a t( x( t* ) )
+        F4 = a t( t x( a ) )
+        """
+        print(f"# Using example pil input:\n{pil}")
 
     set_io_objects() # Using the default Domain, Complex objects of dsdobjects.
 
@@ -50,11 +61,9 @@ def main():
 
     set_domain_colors(domains)
 
-    for n, c in complexes.items():
+    for n, cplx in complexes.items():
         print(f'Drawing complex_{n}')
-        stable = list(c.strand_table)
-        ptable = list(c.pair_table)
-        svg = draw_complex(stable, ptable, name = n)
+        svg = draw_complex(cplx)
         svg.save_png(f'complex_{n}.png')
 
 

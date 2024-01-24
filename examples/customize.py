@@ -30,9 +30,9 @@ kerneldrawings = {
         'pa': {3: 180},
         'll': {}#{(1,1): 5}
          },
-    'A1': {'kernel': 'A1 = x a( y a*( z ) u a( y + x ) u a*( e a*( x + ) ) v ) z',
+    'A1': {'kernel': 'A1 = x a( y a*( z ) u a( y + x ) u a*( h a*( x + ) ) v ) z',
            'pa': {1: 90, 3: 270, 4:250},
-           'll': {}
+           'll': {(1,2):12.9}
          },
  
     'B': {'kernel': 'B = z g( b c h( l ) y z b( g + l ) y z b( x + y* ) y z ) y',
@@ -142,7 +142,7 @@ def main():
             la[k][l] = v 
    
     # Third, get the SVG objects of the complex!
-    svg = draw_complex(stable, ptable, pair_angles = pa, loop_lengths = ll, loop_angles = la)
+    svg = draw_complex(mycplx, pair_angles = pa, loop_lengths = ll, loop_angles = la)
     svg.save_png(f'complex_{mycplx.name}.png')
     #svg.save_svg(f'complex_{mycplx.name}.svg')
 
