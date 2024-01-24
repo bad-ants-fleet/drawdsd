@@ -1,13 +1,10 @@
 #
 # High-level and mid-level library interface.
 #
-import logging
-log = logging.getLogger(__name__)
-
 from itertools import combinations
 
-from .rendering import get_drawing, get_rgb_palette, draw_stem, draw_tentacles
 from .components import fourway_module, hairpin_module
+from .rendering import get_drawing, get_rgb_palette, draw_stem, draw_tentacles
 
 def agl(a):
     return a % 360
@@ -246,7 +243,6 @@ def get_svg_components(stable, ptable, pair_angles = None, loop_lengths = None, 
         loop_lengths: the loop lengths used to draw this svg image
 
     """
-
     pa, ll, la = get_default_plot_params(stable, ptable)
     assert pair_angles is None or len(pair_angles) == len(pa)
     assert loop_lengths is None or len(loop_lengths) == len(ll)
@@ -272,5 +268,5 @@ def get_svg_components(stable, ptable, pair_angles = None, loop_lengths = None, 
         objects.extend(draw_stem(*m.stem_data()))
         [objects.extend(x) for x in draw_tentacles(*m.tentacle_data())]
 
-    return objects
+    return objects, pa, ll, la
 

@@ -1,29 +1,11 @@
 #
 # Provides "components" (or "drawingmodules") to calculate plot coordinates.
 #
-import logging
-log = logging.getLogger(__name__)
-
 import numpy as np
-
-scale = 16
-
-def distance(p1, p2):
-    """Returns distance between two points."""
-    return np.sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
-
-
-def unitvec(p1, p2, dist = None):
-    """Returns unit vector from p1 to p2."""
-    if dist is None:
-        dist = distance(p1, p2) 
-    return (p2[0]-p1[0])/dist, (p2[1]-p1[1])/dist
+from .rendering import scale, agl 
 
 class DrawingModuleError(Exception):
     pass
-
-def agl(a):
-    return a % 360
 
 def half_angle(a, b, fwd = False, rev = False):
     # from a -> to b

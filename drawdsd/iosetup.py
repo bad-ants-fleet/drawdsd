@@ -26,8 +26,8 @@ def set_domain_colors(d):
 def draw_complex(cplx, **kwargs):
     stable = list(cplx.strand_table)
     ptable = list(cplx.pair_table)
-    svgC = get_svg_components(stable, ptable, **kwargs)
-    return get_drawing(svgC, cplx.name)
+    svgC, pa, ll, la = get_svg_components(stable, ptable, **kwargs)
+    return get_drawing(svgC, cplx.name), pa, ll, la
 
 def main():
     # An minimal workflow using the dsdobjects library.
@@ -63,7 +63,10 @@ def main():
 
     for n, cplx in complexes.items():
         print(f'Drawing complex_{n}')
-        svg = draw_complex(cplx)
+        svg, pa, ll, la = draw_complex(cplx)
+        #print(f'pair-angles = {pa}')
+        #print(f'loop-lengths = {ll}')
+        #print(f'loop-angles = {la}')
         svg.save_png(f'complex_{n}.png')
 
 

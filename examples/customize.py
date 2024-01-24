@@ -142,7 +142,10 @@ def main():
             la[k][l] = v 
    
     # Third, get the SVG objects of the complex!
-    svg = draw_complex(mycplx, pair_angles = pa, loop_lengths = ll, loop_angles = la)
+    svg, pa, ll, la = draw_complex(mycplx, pair_angles = pa, loop_lengths = ll, loop_angles = la)
+    print(pa)
+    print(ll)
+    print(la)
     svg.save_png(f'complex_{mycplx.name}.png')
     #svg.save_svg(f'complex_{mycplx.name}.svg')
 

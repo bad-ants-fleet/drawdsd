@@ -3,9 +3,7 @@
 #
 __version__ = "v0.2"
 
-import logging
-logging.getLogger(__name__).addHandler(logging.NullHandler())
-
-#from .drawdsd import draw_complex, get_default_plot_params
-#from .rendering import get_drawing, get_rgb_palette
+from .iosetup import set_domain_lengths, set_domain_colors, draw_complex
+from .drawdsd import get_svg_components, get_default_plot_params
+from .rendering import get_drawing, get_rgb_palette
 

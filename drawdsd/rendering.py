@@ -1,16 +1,13 @@
 #
 # Produce an SVG file from data.
 #
-import logging
-log = logging.getLogger(__name__)
-
 import numpy as np
 import drawsvg as draw
 from colorsys import hls_to_rgb
-from .components import scale, agl
 from scipy.optimize import fsolve
 
 # Global parameters
+scale = 16
 prec = 4
 font_weight = 'bold' # TODO: need some interfacd for plotting parameters.
 font_family = 'Helvetica'
@@ -113,6 +110,9 @@ def draw_3prime(p, xn, yn, ux, uy):
                round(x32, prec), round(y32, prec))
 
 # Helpers
+def agl(a):
+    return a % 360
+
 def a_lt_b(a, b):
     return a < b and not np.isclose(a, b)
 
