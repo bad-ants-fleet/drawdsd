@@ -12,82 +12,51 @@ generated images that are *almost* exactly like you want them? Then try this.
 ## Quickstart
 
 ### 1. Using Jupyter notebooks:
-**This interface is in prepration.** 
+see examples/examples.ipynb
 
 ### 2. Customizing the SVG output:
-This example assumes you are somewhat comfortable working with the [dsdobjects]
-library (although you may not need more than the few lines of code below).
-Customization involves various types of parameters:
- - the color of domains
- - the angles of paired domains
- - the distances of unpaired domains
- - the angles of unpaired domains
+Here is a small example script using the default rendering. The
+pair angles, loop lengths, and loop angles are adjustable, see
+the notebook for details.
 
 ```py
-from dsdobjects.objectio import set_io_objects, read_pil, read_pil_line
-from drawdsd import draw_complex, get_default_plot_params
-from drawdsd.rendering import get_drawing, get_rgb_palette
+pil = """
+sequence a = NNNNNNNNNN: 10
+sequence t = NNNNN: 5
+sequence x = NNNNNNNNNN: 10
+sequence b = NNNNNNNNNN: 10
+
+# DrawDSD does not support single strands atm, 
+# so here the toehold is assumed to be paired!
+A = a t( x + )
+B = x t( b + )
+F1 = x( t( b + ) ) t*
+F2 = a t( x( + t* ) )
+"""
 
 set_io_objects() # Using the default Domain, Complex objects of dsdobjects.
 
-# Let's separate the initialization of Domain objects ...
-_ = read_pil('''
-         length a = 7
-         length b = 5
-         length c = 15
-         length x = 5
-         length y = 15
-         length k = 5
-         length r = 5
-         length g = 5
-         length l = 5
-         ''')
+info = read_pil(pil)
+domains = info['domains']
+complexes = info['complexes']
 
-# ... from the initialization of a specific complex object via a kernel string:
-mycplx = read_pil_line('A = r b( g r b( l ) y r b( g + l ) y r b( g + l ) y l ) y')
+set_domain_colors(domains)
 
-#
-# Customization 1: Let's choose the color for each domain.
-#
-palette = get_rgb_palette(len(mycplx.domains))
-for dom in mycplx.domains:
-    if hasattr(dom, 'color'):
-        continue
-    col = palette.pop(0)
-    dom.color = f'rgb{col}'
-    (~dom).color = f'rgb{col}'
-        
-#
-# Customization 2 & 3: Let's choose "pair angles" and "loop lengths".
-#
+for n, cplx in complexes.items():
+    print(f'Drawing complex_{n}')
+    svg, pa, ll, la = draw_complex(cplx)
+    print(f'pair-angles = {pa}')
+    print(f'loop-lengths = {ll}')
+    print(f'loop-angles = {la}')
+    svg.save_png(f'complex_{n}.png')
 
-# First, get the defaults.
-pa, ll = get_default_plot_params(mycplx)
-
-# Second, change the defaults. (Values are 0-based and in order of the kernel string input).
-pa[3] = 180   # Force the angle of the paired domain #3 (4th).
-ll[0][1] = 10 # Force the distance of loop #1 (2nd) on strand #0 (1st).
-ll[1][1] = 10
-
-# Third, get the SVG objects of the complex!
-svgC, pa, ll = draw_complex(mycplx, pair_angles = pa, loop_lengths = ll)
-
-# Last, draw the complex!
-svg = get_drawing(svgC)
-svg.savePng(f'drawing_complex_{mycplx.name}.png')
 ```
-You can find a modified version of this script in the [examples] folder: [customize.py].
 
 ## Version
- - v0.2
+ - v0.3: 
 
-## TODOs (ranking from high to low priority)
- - provide interface for plotting parameters such as path width, font size, etc.
- - find nice examples for rendering and make a notebook gallery.
- - provide better default rendering (e.g naview-like, forgi-like)
- - provide additional high-level input from PIL file only.
-
-# Have fun!
+## TODO:
+ - provide visualization of single strands?
 
 [dsdobjects]: <https://github.com/DNA-and-Natural-Algorithms-Group/dsdobjects>
 [peppercornenumerator]: <https://github.com/DNA-and-Natural-Algorithms-Group/peppercornenumerator>

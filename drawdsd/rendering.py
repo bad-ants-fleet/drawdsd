@@ -8,14 +8,14 @@ from scipy.optimize import fsolve
 
 # Global parameters
 scale = 16
-prec = 4
-font_weight = 'bold' # TODO: need some interfacd for plotting parameters.
+font_size = 14
 font_family = 'Helvetica'
+font_weight = 'bold'
 domain_stroke_width = 9
 backbone_stroke_width = 16
 backbone_color = 'gray'
-text_font_size = 14
 circular_loops = True
+prec = 4
 
 # Layout
 def get_rgb_palette(num):
@@ -39,7 +39,7 @@ def dom_path(dcolor, sw = None, da = None):
 def dom_txt(dname, x, y, ux, uy):
     x = x + uy*scale*1.1
     y = y - ux*scale*1.1
-    t = draw.Text(dname, text_font_size, 
+    t = draw.Text(dname, font_size, 
                      x = round(x, prec), 
                      y = round(y, prec), 
                      font_family = font_family,
@@ -611,7 +611,7 @@ def get_drawing(svgC, name = ''):
 
     # Draw name in right upper corner
     if name:
-        svg.append(draw.Text(name, text_font_size, 
+        svg.append(draw.Text(name, font_size, 
                              x = minx + 30, y = miny + 40,
                              font_family = font_family,
                              font_weight = font_weight))
