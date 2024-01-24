@@ -268,5 +268,5 @@ def get_svg_components(stable, ptable, pair_angles = None, loop_lengths = None, 
         objects.extend(draw_stem(*m.stem_data()))
         [objects.extend(x) for x in draw_tentacles(*m.tentacle_data())]
 
-    return objects, pa, ll, la
+    return objects, pair_angles, loop_lengths, loop_angles
 
