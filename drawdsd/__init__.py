@@ -1,7 +1,7 @@
 #
 # The drawdsd module. 
 #
-__version__ = "v0.2"
+__version__ = "v0.3"
 
 from .iosetup import set_domain_lengths, set_domain_colors, draw_complex
 from .drawdsd import get_svg_components, get_default_plot_params
