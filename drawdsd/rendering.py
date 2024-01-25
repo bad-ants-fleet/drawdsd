@@ -601,9 +601,7 @@ def get_drawing(svgC, name = ''):
 
     # We truncate domains consistently at the 3' and 5' ends 
     # to give better contrast.
-    print(backbone)
     dom_layer = truncated_domains(backbone)
-    print(backbone)
     bbn_layer = get_backbones(backbone)
 
     svg.extend(bg_layer)
