@@ -1,0 +1,8 @@
+# cat complex_G.pil | drawDSD -a 0:30 1:150 2:30 3:-30
+# cat complex_G.pil | drawDSD -a 1:90 3:-90
+
+sequence a = ACGCGAGGGT: 10 
+sequence x = ACGTG: 5
+sequence y = GGCCC: 5
+
+G = x a( a*( y ) a*( y + x ) a*( x ) ) y
