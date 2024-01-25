@@ -33,6 +33,7 @@ initialized.
  - Provide visualization of unpaired strands. (Currently, an input complex needs at least one paired domain.)
  - support pseudoknots.
  - support simple reaction scheme.
+ - strand-based coloring (see examples/complex_peppercorn.png)
 
 [dsdobjects]: <https://github.com/DNA-and-Natural-Algorithms-Group/dsdobjects>
 [peppercornenumerator]: <https://github.com/DNA-and-Natural-Algorithms-Group/peppercornenumerator>

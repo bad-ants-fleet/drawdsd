@@ -97,6 +97,7 @@ def main():
             print(f'  - pair-angles = {pa}')
             print(f'  - loop-lengths = {ll}')
             print(f'  - loop-angles = {la}')
+            svg.save_svg(f'complex_{n}.svg')
             svg.save_png(f'complex_{n}.png')
         else:
             _, pa, ll, la = draw_complex(cplx)
@@ -116,6 +117,7 @@ def main():
             print(f'  - pair-angles = {pa}')
             print(f'  - loop-lengths = {ll}')
             print(f'  - loop-angles = {la}')
+            svg.save_svg(f'complex_{n}.svg')
             svg.save_png(f'complex_{n}.png')
 
 if __name__ == '__main__':
