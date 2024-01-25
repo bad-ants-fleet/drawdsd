@@ -2,6 +2,9 @@
 
 Tired of drawing domain-level complexes by hand? Tired of automatically
 generated images that are *almost* exactly like you want them? Try this.
+The drawdsd library provides an interface to specify the angles of helices, 
+the angles and shapes of loop regions, etc. Are you missing features? 
+Let us know through github issues.  
 
 ## Install
 ```sh
