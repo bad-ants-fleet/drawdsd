@@ -1,5 +1,7 @@
 # drawdsd -- SVG images of domain-level complexes 
 
+![drawsdsd example](https://github.com/bad-ants-fleet/drawdsd/blob/master/examples/complex_PEP.png)
+
 Tired of drawing domain-level complexes by hand? Tired of automatically
 generated images that are *almost* exactly like you want them? Try this.
 The drawdsd library provides an interface to specify the angles of helices, 
