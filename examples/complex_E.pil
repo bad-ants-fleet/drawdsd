@@ -1,4 +1,4 @@
-# drawDSD -l 0,1:7
+# cat complex_E.pil | drawDSD -l 0,1:7
 
 length a = 10 
 length b = 10

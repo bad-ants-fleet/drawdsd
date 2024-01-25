@@ -1,0 +1,8 @@
+# cat complex_F.pil | drawDSD -a 0:180
+
+sequence a = ACGTACGTGG: 10 
+sequence b = GGGTTTCCTT: 10
+sequence x = NNNNN: 5
+sequence y = NNNNN: 5
+
+F = a( x ) b( y )
