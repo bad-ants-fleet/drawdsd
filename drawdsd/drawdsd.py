@@ -257,8 +257,10 @@ def get_svg_components(stable, ptable, pair_angles = None, loop_lengths = None, 
 
     # Provide spacing
     loop_lengths = [[(i+spacing) if (i==0) else i for i in s] for s in loop_lengths]
-    # Rotate complex
+    # Rotate pair angles
     pair_angles = [a+rotate for a in pair_angles]
+    # Rotate loop angles
+    loop_angles = [[a+rotate if a is not None else a for a in strand] for strand in loop_angles]
 
     modules = get_final_modules(stable, ptable, pair_angles, loop_lengths, 
                                 loop_angles,
