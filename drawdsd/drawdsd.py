@@ -42,7 +42,7 @@ def get_segments(ptable, loop_lengths, loop_angles):
     """
     segments = {}
     identity, seg, pos = None, [[], []], 0
-    ll1, ll2, lli = 0, 0, 0 # loop_length stuff
+    ll1, ll2, lli, la1, la2 = 0, 0, 0, 0, 0 # loop_length stuff
     p5, p3 = True, False
     for si, strand in enumerate(ptable):
         for di, pair in enumerate(strand):
@@ -67,7 +67,7 @@ def get_segments(ptable, loop_lengths, loop_angles):
         p3 = True
         segments[identity] = seg, (ll1, ll2), (la1, la2), (p5, p3)
         identity, seg, pos = None, [[], []], 0
-        ll1, ll2, lli = 0, 0, 0
+        ll1, ll2, lli, la1, la2 = 0, 0, 0, 0, 0 
         p5, p3 = True, False
     return segments
 
