@@ -288,7 +288,7 @@ def get_detour_square(p0, pN, dtarget):
     rx, ry = vec_rot(ux, uy, -90)
     x1, y1 = p0
     x2, y2 = x1 + rx*ddetour/2, y1 + ry*ddetour/2
-    x3, y3 = x2 + ux*dist_0N, y1 + uy*dist_0N
+    x3, y3 = x2 + ux*dist_0N, y2 + uy*dist_0N
     x4, y4 = x1 + ux*dist_0N, y1 + uy*dist_0N
     assert pN == (x4, y4)
     return [p0, (x2, y2), (x3, y3), pN]
